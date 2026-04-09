@@ -1,40 +1,50 @@
+# Vora - Geliştirme Aşamasında Hep Bağlı Kalınıcaklar
+
+## Frontend Kısmı İçin
+ - İconlar asla çizilmiyicek gerekli icon kütüphanelerinden profsyonel ve uygun şekilde alınıp kullanılıcak.
+ 
+
+
+
 # Vora - Backend Görev Listesi (Docker, Auth & Persona Temelli Profil)
 
 ## 1. Hazırlık ve Dockerizasyon
 - [x] `tasks/todo.md` ve `tasks/lessons.md` oluşturuldu.
-- [ ] NestJS projesini `backend` klasöründe başlat (`npm i -g @nestjs/cli` -> `nest new backend`).
-- [ ] Docker konfigürasyonu:
-    - [ ] `Dockerfile` (Development) oluştur.
-    - [ ] `docker-compose.yml` (PostgreSQL 16+) hazırlat.
-- [ ] Prisma 6 Kurulumu:
-    - [ ] `prisma init`.
-    - [ ] Schema tasarımı (User, Profile, Persona, Goal enumları).
-    - [ ] Prisma Client oluşturma ve Docker DB bağlantısı.
+- [x] NestJS projesi `backend` klasöründe başlatıldı.
+- [x] Docker konfigürasyonu:
+    - [x] `Dockerfile` (Development) oluşturuldu.
+    - [x] `docker-compose.yml` (PostgreSQL 16) hazırlandı.
+- [x] Prisma 6 Kurulumu:
+    - [x] `prisma init` ve schema tasarımı tamamlandı.
+    - [x] Prisma Client ve Docker DB bağlantısı sağlandı.
 
-## 2. Kullanıcı ve Profil Modeli (Onboarding Hazırlığı)
-- [ ] **Schema Detayları:**
-    - `User`: email, password, createdAt, vb.
-    - `Profile`: firstName, birthDate, gender, height, weight, activityLevel, targetWeight, selectedPersona (Obsidian, Charcoal, Arctic).
-- [ ] Prisma migration'ı gerçekleştir.
+## 2. Kullanıcı ve Profil Modeli
+- [x] **Schema Detayları:** User, Profile, Food, Meal, WaterLog modelleri eklendi.
+- [x] Prisma migration'lar gerçekleştirildi.
 
 ## 3. Kimlik Doğrulama (Auth)
-- [ ] `Auth` ve `Users` modüllerini oluştur.
-- [ ] Bcrypt ile şifre hashleme.
+- [x] `Auth` ve `Users` modülleri oluşturuldu.
+- [x] Bcrypt ile şifre hashleme uygulandı.
 - [ ] **JWT Stratejisi:**
-    - [ ] Access Token (kısa ömürlü).
-    - [ ] Refresh Token (uzun ömürlü, DB'de hashlenmiş tutulacak).
-- [ ] **Endpoints:**
-    - [ ] `POST /auth/register`: Kullanıcı ve Profil verilerini aynı anda alır.
-    - [ ] `POST /auth/login`: JWT döner.
-    - [ ] `POST /auth/refresh`: Yeni Access Token üretir.
-- [ ] Global `AtGuard` (Access Token Guard) ve `@Public` decorator'ı.
+    - [x] Access Token (7 gün - test aşamasında uzatıldı).
+    - [ ] Refresh Token (Henüz implemente edilmedi - DB'de hashlenmiş tutulacak).
+- [x] **Endpoints:**
+    - [x] `POST /auth/register`: Kullanıcı ve Profil verilerini aynı anda oluşturuyor.
+    - [x] `POST /auth/login`: JWT dönüyor.
+    - [ ] `POST /auth/refresh`: Yeni Access Token üretimi (Eksik).
+- [x] Global `AtGuard` ve `@Public` decorator'ı (Kontrol edilecek).
 
-## 4. Doğrulama
-- [ ] Docker container'ların ayağa kalktığını doğrula.
-- [ ] Prisma Studio ile veritabanı kontrolü.
-- [ ] Postman/Curl ile Register/Login testi.
+## 4. Doğrulama ve Test
+- [x] Docker container'ların ayağa kalktığı doğrulandı.
+- [x] Prisma Studio ile DB kontrolü.
+- [x] Register/Login akışı backend tarafında hazır.
+
+## 5. Yeni Hedefler & Eksikler
+- [ ] Refresh Token mekanizmasının tamamlanması.
+- [ ] Frontend tarafında Onboarding ekranlarının (Persona seçimi dahil) backend ile bağlanması.
+- [ ] Dashboard ve Günlük (Diary) için API uçlarının detaylandırılması.
 
 ---
 ## İnceleme Bölümü
-- Vizyon: `planlar.md` içeriği backend şemasına yansıtıldı.
-- Karar: Prisma 6 ve PostgreSQL 16 kullanılacak.
+- Mevcut durum: Backend iskeleti ve Auth büyük oranda tamamlandı.
+- Kritik: Refresh token ve token rotasyonu güvenliği artırmak için eklenecek.

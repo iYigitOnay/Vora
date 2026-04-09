@@ -101,7 +101,8 @@ export default function AuthPage() {
         
         {/* INFO PANEL (Logo & Slogan) */}
         <motion.div 
-          animate={{ x: isLogin ? '100%' : 0 }}
+          initial={false}
+          animate={{ x: isLogin ? 0 : '100%' }}
           transition={{ type: "spring", damping: 26, stiffness: 80, restDelta: 0.001 }}
           className="absolute inset-y-0 left-0 w-full md:w-1/2 p-12 bg-gradient-to-br from-vora-accent/[0.05] to-transparent flex flex-col justify-center items-center text-center z-20 border-x border-vora-border/10 h-full"
         >
@@ -132,7 +133,8 @@ export default function AuthPage() {
 
         {/* FORM PANEL */}
         <motion.div 
-          animate={{ x: isLogin ? 0 : '100%' }}
+          initial={false}
+          animate={{ x: isLogin ? '100%' : 0 }}
           transition={{ type: "spring", damping: 30, stiffness: 120 }}
           className="w-full md:w-1/2 p-12 flex flex-col justify-center items-center z-30"
         >

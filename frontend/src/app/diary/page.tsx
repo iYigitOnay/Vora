@@ -67,7 +67,8 @@ export default function DiaryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedFood, setSelectedFood] = useState<any>(null);
-  const [amount, setAmount] = useState(100);
+  const [amount, setAmount] = useState<string>("100");
+  const [addToLibrary, setAddToLibrary] = useState(false);
   const [mealType, setMealType] = useState<string>("BREAKFAST");
   const [dailyMeals, setDailyLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -367,14 +368,14 @@ export default function DiaryPage() {
               ) : (
                 <div className="space-y-8">
                   <div className="flex items-center gap-6">
-                    <div className="w-20 h-20 bg-vora-accent/10 rounded-[2rem] flex items-center justify-center text-vora-accent">
+                    <div className="w-20 h-20 bg-vora-accent/10 rounded-[2rem] flex items-center justify-center text-vora-accent border border-vora-accent/20">
                       <UtensilsCrossed className="w-8 h-8" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold uppercase tracking-tight">
+                      <h2 className="text-2xl font-bold uppercase tracking-tight text-vora-primary">
                         {selectedFood.name}
                       </h2>
-                      <p className="text-xs text-vora-tertiary uppercase tracking-widest">
+                      <p className="text-xs text-vora-text-secondary uppercase tracking-widest font-medium">
                         {selectedFood.brand || "Vora Kütüphane"}
                       </p>
                     </div>
@@ -382,81 +383,106 @@ export default function DiaryPage() {
 
                   <div className="grid grid-cols-2 gap-8">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-vora-tertiary uppercase tracking-widest">
+                      <label className="text-[10px] font-bold text-vora-text-secondary uppercase tracking-[0.2em] ml-1">
                         Miktar (Gram / ml)
                       </label>
-                      <input
-                        type="number"
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-2xl font-black outline-none focus:border-vora-accent"
-                        value={amount}
-                        onChange={(e) => setAmount(Number(e.target.value))}
-                      />
+                      <div className="relative group">
+                        <input
+                          type="text"
+                          placeholder="0"
+                          className="w-full bg-vora-surface-raised border border-vora-border rounded-2xl p-4 text-2xl font-black outline-none focus:border-vora-accent text-vora-primary transition-all shadow-inner"
+                          value={amount}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, "");
+                            setAmount(val === "" ? "" : parseInt(val, 10).toString());
+                          }}
+                        />
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-vora-text-tertiary uppercase tracking-widest group-focus-within:text-vora-accent transition-colors">G / ML</div>
+                      </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-vora-tertiary uppercase tracking-widest">
+                      <label className="text-[10px] font-bold text-vora-text-secondary uppercase tracking-[0.2em] ml-1">
                         Öğün Tipi
                       </label>
-                      <select
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 h-[66px] outline-none focus:border-vora-accent uppercase text-[10px] font-bold tracking-widest"
-                        value={mealType}
-                        onChange={(e) => setMealType(e.target.value)}
-                      >
-                        <option value="BREAKFAST">Kahvaltı</option>
-                        <option value="LUNCH">Öğle Yemeği</option>
-                        <option value="DINNER">Akşam Yemeği</option>
-                        <option value="SNACK">Atıştırmalık</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          className="w-full bg-vora-surface-raised border border-vora-border rounded-2xl p-4 h-[66px] outline-none focus:border-vora-accent uppercase text-[10px] font-bold tracking-widest text-vora-primary appearance-none cursor-pointer transition-all shadow-inner"
+                          value={mealType}
+                          onChange={(e) => setMealType(e.target.value)}
+                        >
+                          <option value="BREAKFAST">Kahvaltı</option>
+                          <option value="LUNCH">Öğle Yemeği</option>
+                          <option value="DINNER">Akşam Yemeği</option>
+                          <option value="SNACK">Atıştırmalık</option>
+                        </select>
+                        <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-vora-text-tertiary rotate-90 pointer-events-none" />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-4 p-6 bg-white/[0.02] rounded-3xl border border-vora-border/20 text-center">
-                    <div>
-                      <p className="text-[8px] text-vora-tertiary uppercase mb-1">
-                        Kcal
-                      </p>
-                      <p className="font-bold text-sm">
-                        {Math.round((selectedFood.calories / 100) * amount)}
+                  {/* Kütüphaneye Ekleme Switch'i — Temalar.md uyumlu */}
+                  <div 
+                    className={`flex items-center justify-between p-5 rounded-[2rem] border transition-all duration-300 cursor-pointer ${addToLibrary ? "bg-vora-accent/5 border-vora-accent/30 shadow-[0_0_20px_rgba(var(--color-accent),0.05)]" : "bg-vora-surface-raised border-vora-border/40 hover:border-vora-border"}`} 
+                    onClick={() => setAddToLibrary(!addToLibrary)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 ${addToLibrary ? "bg-vora-accent text-vora-text-on-accent scale-110 shadow-lg shadow-vora-accent/20" : "bg-vora-background text-vora-text-tertiary"}`}>
+                        <Plus className={`w-6 h-6 transition-transform duration-500 ${addToLibrary ? "rotate-90" : ""}`} />
+                      </div>
+                      <div>
+                        <p className={`text-[11px] font-bold uppercase tracking-widest transition-colors ${addToLibrary ? "text-vora-primary" : "text-vora-text-secondary opacity-60"}`}>Kütüphaneme Ekle</p>
+                        <p className="text-[9px] text-vora-text-tertiary uppercase font-medium">Bu besini favorilerine dahil et</p>
+                      </div>
+                    </div>
+                    <div className={`w-14 h-7 rounded-full p-1 transition-all duration-500 relative ${addToLibrary ? "bg-vora-accent" : "bg-vora-background border border-vora-border"}`}>
+                      <motion.div 
+                        animate={{ x: addToLibrary ? 28 : 0 }}
+                        className="w-5 h-5 bg-white rounded-full shadow-xl z-10 relative"
+                      />
+                      <div className={`absolute inset-0 rounded-full transition-opacity duration-500 ${addToLibrary ? "opacity-100" : "opacity-0"} bg-gradient-to-r from-vora-accent to-vora-accent-bright animate-pulse`} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-4 p-6 bg-vora-surface-raised rounded-3xl border border-vora-border text-center shadow-inner">
+                    <div className="space-y-1">
+                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">Kcal</p>
+                      <p className="font-black text-lg text-vora-primary tracking-tighter">
+                        {Math.round((selectedFood.calories / 100) * (Number(amount) || 0))}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-[8px] text-vora-tertiary uppercase mb-1">
-                        Protein
-                      </p>
-                      <p className="font-bold text-sm">
-                        {Math.round((selectedFood.protein / 100) * amount)}g
+                    <div className="space-y-1">
+                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">Prot</p>
+                      <p className="font-black text-lg text-vora-primary tracking-tighter">
+                        {Math.round((selectedFood.protein / 100) * (Number(amount) || 0))}g
                       </p>
                     </div>
-                    <div>
-                      <p className="text-[8px] text-vora-tertiary uppercase mb-1">
-                        Karbonhidrat
-                      </p>
-                      <p className="font-bold text-sm">
-                        {Math.round((selectedFood.carbs / 100) * amount)}g
+                    <div className="space-y-1">
+                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">Karb</p>
+                      <p className="font-black text-lg text-vora-primary tracking-tighter">
+                        {Math.round((selectedFood.carbs / 100) * (Number(amount) || 0))}g
                       </p>
                     </div>
-                    <div>
-                      <p className="text-[8px] text-vora-tertiary uppercase mb-1">
-                        Yağ
-                      </p>
-                      <p className="font-bold text-sm">
-                        {Math.round((selectedFood.fat / 100) * amount)}g
+                    <div className="space-y-1">
+                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">Yağ</p>
+                      <p className="font-black text-lg text-vora-primary tracking-tighter">
+                        {Math.round((selectedFood.fat / 100) * (Number(amount) || 0))}g
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 pt-4">
                     <button
                       onClick={() => setSelectedFood(null)}
-                      className="flex-1 py-5 text-[10px] font-bold uppercase tracking-widest text-vora-tertiary hover:text-white transition-colors"
+                      className="flex-1 py-5 text-[10px] font-bold uppercase tracking-[0.3em] text-vora-text-tertiary hover:text-vora-primary transition-all active:scale-95"
                     >
-                      Geri
+                      İptal
                     </button>
                     <button
                       onClick={handleLogMeal}
-                      disabled={loading}
-                      className="flex-[2] bg-vora-accent text-vora-on-accent py-5 rounded-2xl font-bold text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-vora-accent/20"
+                      disabled={loading || !amount || Number(amount) <= 0}
+                      className="flex-[2.5] bg-vora-accent text-vora-text-on-accent py-5 rounded-[1.5rem] font-bold text-[11px] uppercase tracking-[0.3em] shadow-2xl shadow-vora-accent/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-20 disabled:grayscale transition-all"
                     >
-                      Kaydet
+                      Sisteme İşle
                     </button>
                   </div>
                 </div>

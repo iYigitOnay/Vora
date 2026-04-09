@@ -7,7 +7,9 @@ import { motion } from "framer-motion";
 import {
   Home,
   Calendar,
+  CookingPot,
   BarChart3,
+  Stethoscope,
   User,
   Settings,
   LogOut,
@@ -26,7 +28,9 @@ function cn(...inputs: ClassValue[]) {
 const navItems = [
   { name: "Ana Sayfa", href: "/", icon: Home },
   { name: "Günlük", href: "/diary", icon: Calendar },
+  { name: "Mutfağım", href: "/kitchen", icon: CookingPot },
   { name: "Analiz", href: "/analysis", icon: BarChart3 },
+  { name: "Diyetisyenim", href: "/expert", icon: Stethoscope },
   { name: "Profil", href: "/profile", icon: User },
 ];
 

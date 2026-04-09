@@ -37,6 +37,23 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const storage = localStorage.getItem('vora-theme-storage');
+                if (storage) {
+                  const parsed = JSON.parse(storage);
+                  if (parsed.state && parsed.state.theme) {
+                    document.documentElement.setAttribute('data-theme', parsed.state.theme);
+                  }
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-full flex bg-vora-background text-vora-primary selection:bg-vora-accent/30">
         <ThemeProvider>
           {!isAuthPage && <Sidebar />}
