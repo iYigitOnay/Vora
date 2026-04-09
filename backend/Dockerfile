@@ -11,6 +11,6 @@ COPY . .
 # Prisma generate komutunu ileride ekleyeceğiz
 # RUN npx prisma generate
 
-EXPOSE 3000
+EXPOSE 3001
 
 CMD ["npm", "run", "start:dev"]

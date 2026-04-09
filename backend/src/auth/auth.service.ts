@@ -1,19 +1,20 @@
 import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto'; // Birazdan oluşturacağız
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   async register(dto: RegisterDto) {
-    // 1. E-posta kontrolü
     const userExists = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -22,10 +23,8 @@ export class AuthService {
       throw new ConflictException('Bu e-posta adresi zaten kullanımda.');
     }
 
-    // 2. Şifre hashleme
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    // 3. Kullanıcı ve Profil oluşturma (Transaction)
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
@@ -44,12 +43,8 @@ export class AuthService {
           },
         },
       },
-      include: {
-        profile: true,
-      },
     });
 
-    // 4. Token üretimi ve dönüş
     return this.generateTokens(user.id, user.email);
   }
 
@@ -73,10 +68,9 @@ export class AuthService {
   private async generateTokens(userId: string, email: string) {
     const payload = { sub: userId, email };
     
-    // Access Token (15 dk) - Refresh token yapısını sonra genişletebiliriz
     const accessToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_SECRET,
-      expiresIn: '15m',
+      secret: this.configService.get<string>('JWT_SECRET'),
+      expiresIn: '7d', // Test aşamasında süreyi uzattım
     });
 
     return {
