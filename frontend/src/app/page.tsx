@@ -1,32 +1,15 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Zap,
-  Droplets,
-  Flame,
-  Target,
-  Trophy,
-  ArrowUpRight,
-  Plus,
-  Sparkles,
-  Search,
-  Dumbbell,
-  X,
-  ChevronRight,
-  UtensilsCrossed,
-  Barcode,
-  Upload,
-  Camera,
-  Waves,
-  GlassWater,
-  Milestone,
-} from "lucide-react";
-import { useThemeStore } from "@/store/useThemeStore";
+import { motion } from "framer-motion";
+import { Zap, Plus, Search, ChevronRight, Barcode, Target, Droplets } from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import Lottie from "lottie-react";
-import Link from "next/link";
+import { QuickActionsManager, ActionType } from "@/components/dashboard/QuickActionsManager";
+import { DashboardHeader } from "@/components/dashboard/cards/DashboardHeader";
+import { EnergyBalance } from "@/components/dashboard/cards/EnergyBalance";
+import { MacroBalance } from "@/components/dashboard/cards/MacroBalance";
+import { HydrationStatus } from "@/components/dashboard/cards/HydrationStatus";
 
 const BentoCard = ({ children, className, title, icon: Icon }: any) => (
   <motion.div
@@ -41,9 +24,6 @@ const BentoCard = ({ children, className, title, icon: Icon }: any) => (
           {title}
         </h3>
       </div>
-      <button className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-white/5 rounded-full text-vora-tertiary">
-        <ArrowUpRight className="w-4 h-4" />
-      </button>
     </div>
     <div className="flex-1 overflow-hidden">{children}</div>
   </motion.div>
@@ -53,20 +33,8 @@ export default function HomePage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [lottieData, setLottieData] = useState(null);
-  const [showManualModal, setShowManualModal] = useState(false);
-  const [showWaterModal, setShowWaterModal] = useState(false);
-  const [showVisionModal, setShowVisionModal] = useState(false);
+  const [activeAction, setActiveAction] = useState<ActionType>(null);
   const [weather, setWeather] = useState<any>(null);
-
-  const [manualFood, setManualFood] = useState({
-    name: "",
-    calories: "",
-    protein: "",
-    carbs: "",
-    fat: "",
-    amount: 100,
-    type: "BREAKFAST",
-  });
 
   const fetchSummary = async () => {
     try {
@@ -91,74 +59,13 @@ export default function HomePage() {
       .then((d) => setWeather(d.current_weather));
   }, []);
 
-  const handleAddWater = async (amount: number) => {
-    try {
-      await api.post("/meal/log-water", { amount });
-      setShowWaterModal(false);
-      fetchSummary();
-    } catch (err) {
-      console.error("Su eklenemedi:", err);
-    }
-  };
-
-  const handleManualSubmit = async (e: any) => {
-    e.preventDefault();
-    try {
-      const foodRes = await api.post("/food/manual", {
-        name: manualFood.name,
-        calories: Number(manualFood.calories),
-        protein: Number(manualFood.protein),
-        carbs: Number(manualFood.carbs),
-        fat: Number(manualFood.fat),
-      });
-      await api.post("/meal/log", {
-        foodId: foodRes.data.id,
-        type: manualFood.type,
-        amount: Number(manualFood.amount),
-      });
-      setShowManualModal(false);
-      setManualFood({
-        name: "",
-        calories: "",
-        protein: "",
-        carbs: "",
-        fat: "",
-        amount: 100,
-        type: "BREAKFAST",
-      });
-      fetchSummary();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const [barcodeInput, setBarcodeInput] = useState("");
-  const [uploading, setUploading] = useState(false);
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    setTimeout(() => {
-      setUploading(false);
-      alert(`${file.name} analiz edildi!`);
-      setShowVisionModal(false);
-    }, 1500);
-  };
-
-  const handleBarcodeSubmit = () => {
-    if (barcodeInput.trim()) {
-      window.location.href = `/diary?scan=${barcodeInput}`;
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <div className="w-32 h-32 mb-6 opacity-50">
           {lottieData && <Lottie animationData={lottieData} loop={true} />}
         </div>
-        <p className="text-vora-accent font-bold tracking-[0.4em] text-[10px] animate-pulse uppercase">
+        <p className="text-vora-accent font-bold tracking-[0.4em] text-[10px] animate-pulse uppercase text-center">
           Veriler Analiz Ediliyor...
         </p>
       </div>
@@ -168,13 +75,6 @@ export default function HomePage() {
   if (!data) return null;
 
   const { user, targets, consumed, auraStreak } = data;
-  const remainingCals = Math.max(targets.calories - consumed.calories, 0);
-  const remainingWater = Math.max(targets.water - consumed.water, 0);
-  const strokeValue = Math.min(
-    (consumed.calories / targets.calories) * 1000,
-    1000,
-  );
-
   const macros = [
     { label: "Karbonhidrat", val: consumed.carbs, target: targets.carbs },
     { label: "Protein", val: consumed.protein, target: targets.protein },
@@ -183,357 +83,63 @@ export default function HomePage() {
 
   return (
     <div className="h-[calc(100vh-100px)] flex flex-col justify-between overflow-hidden">
-      {/* Header */}
-      <header className="flex justify-between items-center mb-6 px-2 text-vora-primary">
-        <div className="space-y-1">
-          <h1 className="text-4xl font-extralight tracking-tight uppercase">
-            Selam <span className="font-bold">{user.firstName}</span>
-          </h1>
-          <div className="flex items-center gap-3">
-            <p className="text-vora-tertiary text-[10px] tracking-[0.3em] uppercase opacity-60 font-bold italic">
-              Bugünkü aura dengen mükemmel
-            </p>
-            {weather && (
-              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/5 rounded-full border border-white/5">
-                <span className="text-[9px] font-bold text-vora-accent">
-                  {weather.temperature}°C
-                </span>
-                <span className="text-[8px] text-vora-tertiary uppercase tracking-tighter">
-                  İstanbul
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-[10px] font-bold text-vora-tertiary uppercase tracking-widest">
-              Vora Flow
-            </p>
-            <p className="text-2xl font-bold text-vora-accent tracking-tighter">
-              {auraStreak} Gün
-            </p>
-          </div>
-          <div className="w-12 h-12 bg-vora-accent/10 rounded-full flex items-center justify-center border border-vora-accent/20 text-vora-accent shadow-[0_0_20px_rgba(var(--color-accent),0.1)]">
-            <Trophy className="w-6 h-6" />
-          </div>
-        </div>
-      </header>
+      <DashboardHeader user={user} auraStreak={auraStreak} weather={weather} />
 
       {/* Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 min-h-0 mb-6">
         {/* Enerji Dengesi */}
-        <BentoCard
-          title="Enerji Dengesi"
-          icon={Zap}
-          className="md:col-span-8 md:row-span-2"
-        >
-          <div className="flex flex-col md:flex-row items-center justify-around h-full text-vora-primary">
-            <div className="relative w-52 h-52 flex items-center justify-center">
-              <svg className="w-full h-full transform -rotate-90">
-                <circle
-                  cx="50%"
-                  cy="50%"
-                  r="45%"
-                  className="stroke-white/5 fill-none"
-                  strokeWidth="8"
-                />
-                <motion.circle
-                  initial={{ strokeDasharray: "0 1000" }}
-                  animate={{
-                    strokeDasharray: `${(strokeValue / 1000) * 280} 1000`,
-                  }}
-                  transition={{ duration: 1.5, ease: "easeOut" }}
-                  cx="50%"
-                  cy="50%"
-                  r="45%"
-                  className="stroke-vora-accent fill-none"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute text-center">
-                <p className="text-5xl font-black tracking-tighter mb-1 text-vora-primary">
-                  {remainingCals}
-                </p>
-                <p className="text-[9px] font-bold text-vora-tertiary uppercase tracking-[0.2em]">
-                  Kcal Kaldı
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-12 gap-y-8 w-full max-w-[320px]">
-              <div>
-                <p className="text-[9px] font-bold text-vora-tertiary uppercase mb-1 opacity-50">
-                  Günlük Hedef
-                </p>
-                <p className="text-xl font-bold">
-                  {targets.calories}{" "}
-                  <span className="text-[10px] text-vora-tertiary font-normal">
-                    kcal
-                  </span>
-                </p>
-              </div>
-              <div>
-                <p className="text-[9px] font-bold text-vora-tertiary uppercase mb-1 opacity-50">
-                  Toplam Alınan
-                </p>
-                <p className="text-xl font-bold">
-                  {consumed.calories}{" "}
-                  <span className="text-[10px] text-vora-tertiary font-normal">
-                    kcal
-                  </span>
-                </p>
-              </div>
-              <div>
-                <p className="text-[9px] font-bold text-vora-tertiary uppercase mb-1 opacity-50">
-                  Kalan Su
-                </p>
-                <p className="text-xl font-bold text-vora-accent">
-                  {remainingWater > 0 ? (remainingWater / 1000).toFixed(1) : 0}{" "}
-                  <span className="text-[10px] text-vora-tertiary font-normal">
-                    Litre
-                  </span>
-                </p>
-              </div>
-              <div>
-                <p className="text-[9px] font-bold text-vora-tertiary uppercase mb-1 opacity-50">
-                  Aura Durumu
-                </p>
-                <p className="text-xl font-bold text-vora-accent">Stabil</p>
-              </div>
-            </div>
-          </div>
+        <BentoCard title="Enerji Dengesi" icon={Zap} className="md:col-span-8 md:row-span-2">
+          <EnergyBalance targets={targets} consumed={consumed} />
         </BentoCard>
 
         {/* Hızlı İşlemler */}
-        <BentoCard
-          title="Hızlı İşlemler"
-          icon={Plus}
-          className="md:col-span-4 md:row-span-2"
-        >
-          <div className="flex flex-col gap-2.5 h-full justify-center text-vora-primary">
-            <Link href="/diary" className="flex-1">
-              <button className="w-full h-full p-3.5 bg-white/[0.02] hover:bg-vora-accent/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-vora-accent/10 text-vora-accent rounded-xl">
-                    <Search className="w-4 h-4" />
-                  </div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider">
-                    Yemek Ara
-                  </span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-vora-tertiary group-hover:text-vora-accent transition-colors" />
-              </button>
-            </Link>
-            <button 
-              onClick={() => setShowVisionModal(true)}
-              className="flex-1 p-3.5 bg-white/[0.02] hover:bg-vora-accent/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all text-left"
-            >
+        <BentoCard title="Hızlı İşlemler" icon={Plus} className="md:col-span-4 md:row-span-2">
+          <div className="flex flex-col gap-2.5 h-full justify-center">
+            <button onClick={() => setActiveAction("search")} className="flex-1 p-3.5 bg-white/[0.02] hover:bg-vora-accent/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all text-left">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-vora-accent/10 text-vora-accent rounded-xl"><Barcode className="w-4 h-4" /></div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-vora-primary">Barkod'la Ekle</span>
+                <div className="p-2 bg-vora-accent/10 text-vora-accent rounded-xl"><Search className="w-4 h-4" /></div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-vora-primary">Yemek Ara</span>
               </div>
               <ChevronRight className="w-4 h-4 text-vora-tertiary group-hover:text-vora-accent transition-colors" />
             </button>
-
-            <button
-              onClick={() => setShowManualModal(true)}
-              className="flex-1 p-3.5 bg-white/[0.02] hover:bg-vora-secondary/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all text-left"
-            >
+            <button onClick={() => setActiveAction("barcode")} className="flex-1 p-3.5 bg-white/[0.02] hover:bg-vora-accent/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all text-left text-vora-primary">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-vora-secondary/10 text-vora-secondary rounded-xl">
-                  <Plus className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider">
-                  Manuel Ekle
-                </span>
+                <div className="p-2 bg-vora-accent/10 text-vora-accent rounded-xl"><Barcode className="w-4 h-4" /></div>
+                <span className="text-[10px] font-bold uppercase tracking-wider">Barkod'la Ekle</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-vora-tertiary group-hover:text-vora-secondary transition-colors" />
+              <ChevronRight className="w-4 h-4 text-vora-tertiary group-hover:text-vora-accent transition-colors" />
             </button>
-            <button
-              onClick={() => setShowWaterModal(true)}
-              className="flex-1 p-3.5 bg-white/[0.02] hover:bg-vora-warning/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all text-left"
-            >
+            <button onClick={() => setActiveAction("manual")} className="flex-1 p-3.5 bg-white/[0.02] hover:bg-vora-accent/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all text-left text-vora-primary">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-vora-warning/10 text-vora-warning rounded-xl">
-                  <Droplets className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider">
-                  Su İçtim
-                </span>
+                <div className="p-2 bg-vora-accent/10 text-vora-accent rounded-xl"><Plus className="w-4 h-4" /></div>
+                <span className="text-[10px] font-bold uppercase tracking-wider">Manuel Ekle</span>
               </div>
-              <Plus className="w-4 h-4 text-vora-tertiary group-hover:text-vora-warning transition-colors" />
+              <ChevronRight className="w-4 h-4 text-vora-tertiary group-hover:text-vora-accent transition-colors" />
+            </button>
+            <button onClick={() => setActiveAction("water")} className="flex-1 p-3.5 bg-white/[0.02] hover:bg-vora-accent/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all text-left text-vora-primary">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-vora-accent/10 text-vora-accent rounded-xl"><Droplets className="w-4 h-4" /></div>
+                <span className="text-[10px] font-bold uppercase tracking-wider">Su İçtim</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-vora-tertiary group-hover:text-vora-accent transition-colors" />
             </button>
           </div>
         </BentoCard>
 
         {/* Makro Dengesi */}
-        <BentoCard
-          title="Makro Dengesi"
-          icon={Target}
-          className="md:col-span-6 md:row-span-1"
-        >
-          <div className="space-y-5 pt-2 text-vora-primary">
-            {macros.map((m) => {
-              const pct = Math.min((m.val / m.target) * 100, 100) || 0;
-              return (
-                <div key={m.label} className="space-y-1.5">
-                  <div className="flex justify-between items-end px-1">
-                    <span className="text-[9px] font-bold text-vora-tertiary uppercase tracking-widest">
-                      {m.label}
-                    </span>
-                    <span className="text-[11px] font-bold">
-                      {m.val}g{" "}
-                      <span className="text-[8px] text-vora-tertiary font-normal">
-                        / {m.target}g
-                      </span>
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${pct}%` }}
-                      className="h-full bg-vora-accent"
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <BentoCard title="Makro Dengesi" icon={Target} className="md:col-span-6 md:row-span-1">
+          <MacroBalance macros={macros} />
         </BentoCard>
 
         {/* Hidrasyon */}
-        <BentoCard
-          title="Hidrasyon"
-          icon={Droplets}
-          className="md:col-span-6 md:row-span-1"
-        >
-          <div className="flex items-center justify-between h-full px-2 text-vora-primary">
-            <div className="flex items-center gap-10">
-              <div className="text-center">
-                <p className="text-4xl font-black tracking-tighter">
-                  {(consumed.water / 1000).toFixed(1)}
-                </p>
-                <p className="text-[10px] font-bold text-vora-tertiary uppercase tracking-widest">
-                  Litre
-                </p>
-              </div>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => {
-                  const isFilled = (consumed.water / targets.water) * 12 >= i;
-                  return (
-                    <div
-                      key={i}
-                      className={`w-2.5 h-10 rounded-full transition-all ${isFilled ? "bg-vora-accent shadow-[0_0_15px_rgba(var(--color-accent),0.4)]" : "bg-white/5"}`}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-            <button
-              onClick={() => setShowWaterModal(true)}
-              className="p-5 bg-vora-accent rounded-2xl text-vora-on-accent shadow-xl shadow-vora-accent/20 hover:scale-105 active:scale-95 transition-all"
-            >
-              <Plus className="w-6 h-6" />
-            </button>
-          </div>
+        <BentoCard title="Hidrasyon" icon={Droplets} className="md:col-span-6 md:row-span-1">
+          <HydrationStatus consumed={consumed} targets={targets} onAddClick={() => setActiveAction("water")} />
         </BentoCard>
       </div>
 
-      {/* MODALLAR */}
-      <AnimatePresence>
-        {/* Vora Vision - Minimalist Yeniden Tasarım */}
-        {showVisionModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-vora-background/95 flex items-center justify-center p-6 backdrop-blur-xl"
-          >
-            <motion.div 
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="w-full max-w-lg bg-vora-surface border border-vora-border/20 rounded-[3rem] p-12 relative shadow-2xl overflow-hidden"
-            >
-              <button
-                onClick={() => setShowVisionModal(false)}
-                className="absolute top-8 right-8 text-vora-tertiary hover:text-vora-primary transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
+      <QuickActionsManager activeAction={activeAction} onClose={() => setActiveAction(null)} onRefresh={fetchSummary} />
 
-              <div className="text-center mb-10">
-                <h2 className="text-3xl font-light tracking-[0.3em] uppercase mb-2 text-vora-primary">Vora <span className="font-bold text-vora-accent">Vision</span></h2>
-                <div className="h-1 w-12 bg-vora-accent mx-auto rounded-full" />
-              </div>
-
-              <div className="space-y-4">
-                {/* 1. Kamera: Birincil Aksiyon */}
-                <Link href="/diary?action=scan">
-                  <button className="w-full group p-6 bg-vora-accent text-vora-on-accent rounded-[2rem] flex items-center justify-between hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-vora-accent/20">
-                    <div className="flex items-center gap-5">
-                      <div className="p-3 bg-white/20 rounded-2xl"><Camera className="w-6 h-6" /></div>
-                      <span className="font-bold uppercase tracking-widest text-xs">Kamerayı Başlat</span>
-                    </div>
-                    <ChevronRight className="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </Link>
-
-                {/* 2. Dosya: İkincil Aksiyon */}
-                <label className="block w-full cursor-pointer group">
-                  <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
-                  <div className="w-full p-6 bg-white/[0.03] border border-white/5 rounded-[2rem] flex items-center justify-between hover:bg-white/[0.05] transition-all">
-                    <div className="flex items-center gap-5 text-vora-primary">
-                      <div className="p-3 bg-vora-secondary/10 text-vora-secondary rounded-2xl">
-                        {uploading ? <div className="w-6 h-6 border-2 border-t-transparent border-vora-secondary rounded-full animate-spin" /> : <Upload className="w-6 h-6" />}
-                      </div>
-                      <span className="font-bold uppercase tracking-widest text-xs">{uploading ? "Analiz Ediliyor..." : "Fotoğraf Yükle"}</span>
-                    </div>
-                    {!uploading && <ChevronRight className="w-5 h-5 text-vora-tertiary opacity-50" />}
-                  </div>
-                </label>
-
-                {/* 3. Manuel Giriş: Tertemiz Alan */}
-                <div className="w-full p-6 bg-white/[0.03] border border-white/5 rounded-[2rem] focus-within:border-vora-accent/40 transition-all">
-                  <div className="flex items-center gap-5">
-                    <div className="p-3 bg-vora-tertiary/10 text-vora-tertiary rounded-2xl group-focus-within:text-vora-accent transition-colors"><Barcode className="w-6 h-6" /></div>
-                    <div className="flex-1">
-                      <input 
-                        type="text" 
-                        autoFocus
-                        value={barcodeInput}
-                        onChange={(e) => setBarcodeInput(e.target.value)}
-                        placeholder="Barkod Numarası Yazın..." 
-                        className="w-full bg-transparent text-sm font-bold outline-none uppercase tracking-widest text-vora-primary placeholder:opacity-20"
-                        onKeyDown={(e) => e.key === 'Enter' && handleBarcodeSubmit()}
-                      />
-                    </div>
-                    <button 
-                      onClick={handleBarcodeSubmit}
-                      className={`p-2 rounded-xl transition-all ${barcodeInput ? "bg-vora-accent text-white" : "text-vora-tertiary opacity-20"}`}
-                      disabled={!barcodeInput}
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <p className="mt-10 text-center text-[9px] text-vora-tertiary uppercase tracking-[0.3em] font-bold opacity-30 italic">
-                Sustainable Health Architecture
-              </p>
-            </motion.div>
-          </motion.div>
-        )}
-
-
-        {/* Manuel Ekle Modalı */}
-
-      </AnimatePresence>
-
-      <footer className="mt-6 text-center opacity-30">
+      <footer className="mt-6 text-center opacity-30 pb-2">
         <p className="text-[8px] font-medium tracking-[0.2em] uppercase max-w-2xl mx-auto leading-relaxed text-vora-tertiary italic">
           Vora AI // Sustainable Health Architecture
         </p>

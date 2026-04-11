@@ -6,41 +6,54 @@ import { MealType } from '@prisma/client';
 export class MealService {
   constructor(private prisma: PrismaService) {}
 
-  async logMeal(userId: string, data: { foodId: string; type: MealType; amount: number; date?: string }) {
+  async logMeal(userId: string, data: { 
+    foodId: string; 
+    type: MealType; 
+    amount: number; 
+    date?: string;
+    customName?: string;
+    note?: string;
+  }) {
     const logDate = data.date ? new Date(data.date) : new Date();
-    
-    // 1. O gün için bu tipte bir Meal var mı bak, yoksa oluştur
-    let meal = await this.prisma.meal.findFirst({
-      where: {
-        userId,
-        type: data.type,
-        date: {
-          gte: new Date(logDate.setHours(0, 0, 0, 0)),
-          lte: new Date(logDate.setHours(23, 59, 59, 999)),
-        },
-      },
-    });
+    const startOfDay = new Date(logDate.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(logDate.setHours(23, 59, 59, 999));
 
-    if (!meal) {
-      meal = await this.prisma.meal.create({
-        data: {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. O gün için bu tipte bir Meal var mı bak, yoksa oluştur (Atomik)
+      let meal = await tx.meal.findFirst({
+        where: {
           userId,
           type: data.type,
-          date: new Date(),
+          date: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
         },
       });
-    }
 
-    // 2. MealItem'ı ekle
-    return this.prisma.mealItem.create({
-      data: {
-        mealId: meal.id,
-        foodId: data.foodId,
-        amount: data.amount,
-      },
-      include: {
-        food: true,
-      },
+      if (!meal) {
+        meal = await tx.meal.create({
+          data: {
+            userId,
+            type: data.type,
+            date: new Date(), // Orijinal kayıt zamanı
+          },
+        });
+      }
+
+      // 2. MealItem'ı ekle (customName ve note ile birlikte)
+      return tx.mealItem.create({
+        data: {
+          mealId: meal.id,
+          foodId: data.foodId,
+          amount: data.amount,
+          customName: data.customName || null,
+          note: data.note || null,
+        },
+        include: {
+          food: true,
+        },
+      });
     });
   }
 

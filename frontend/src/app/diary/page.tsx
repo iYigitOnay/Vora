@@ -16,8 +16,8 @@ import {
   Trash2,
   Camera,
   Flame,
-  Upload
-  } from "lucide-react";
+  Upload,
+} from "lucide-react";
 
 import { Html5QrcodeScanner } from "html5-qrcode";
 import api from "@/lib/api";
@@ -30,7 +30,7 @@ const DiaryCard = ({
   colorClass = "text-vora-accent",
 }: any) => (
   <motion.div
-    initial={{ opacity: 0, y: 10 }}
+    initial={{ opacity: 0, y: 0 }}
     animate={{ opacity: 1, y: 0 }}
     className="bg-vora-surface border border-vora-border/20 rounded-[2rem] p-6 hover:border-vora-border/40 transition-all group shadow-xl"
   >
@@ -58,7 +58,7 @@ const DiaryCard = ({
   </motion.div>
 );
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams } from "next/navigation";
 
 export default function DiaryPage() {
   const searchParams = useSearchParams();
@@ -85,8 +85,6 @@ export default function DiaryPage() {
       setShowScanner(true);
     }
   }, [searchParams]);
-
-
 
   // Günlük kayıtları çek
   const fetchLogs = async () => {
@@ -394,10 +392,14 @@ export default function DiaryPage() {
                           value={amount}
                           onChange={(e) => {
                             const val = e.target.value.replace(/[^0-9]/g, "");
-                            setAmount(val === "" ? "" : parseInt(val, 10).toString());
+                            setAmount(
+                              val === "" ? "" : parseInt(val, 10).toString(),
+                            );
                           }}
                         />
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-vora-text-tertiary uppercase tracking-widest group-focus-within:text-vora-accent transition-colors">G / ML</div>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-vora-text-tertiary uppercase tracking-widest group-focus-within:text-vora-accent transition-colors">
+                          G / ML
+                        </div>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -421,51 +423,84 @@ export default function DiaryPage() {
                   </div>
 
                   {/* Kütüphaneye Ekleme Switch'i — Temalar.md uyumlu */}
-                  <div 
-                    className={`flex items-center justify-between p-5 rounded-[2rem] border transition-all duration-300 cursor-pointer ${addToLibrary ? "bg-vora-accent/5 border-vora-accent/30 shadow-[0_0_20px_rgba(var(--color-accent),0.05)]" : "bg-vora-surface-raised border-vora-border/40 hover:border-vora-border"}`} 
+                  <div
+                    className={`flex items-center justify-between p-5 rounded-[2rem] border transition-all duration-300 cursor-pointer ${addToLibrary ? "bg-vora-accent/5 border-vora-accent/30 shadow-[0_0_20px_rgba(var(--color-accent),0.05)]" : "bg-vora-surface-raised border-vora-border/40 hover:border-vora-border"}`}
                     onClick={() => setAddToLibrary(!addToLibrary)}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 ${addToLibrary ? "bg-vora-accent text-vora-text-on-accent scale-110 shadow-lg shadow-vora-accent/20" : "bg-vora-background text-vora-text-tertiary"}`}>
-                        <Plus className={`w-6 h-6 transition-transform duration-500 ${addToLibrary ? "rotate-90" : ""}`} />
+                      <div
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 ${addToLibrary ? "bg-vora-accent text-vora-text-on-accent scale-110 shadow-lg shadow-vora-accent/20" : "bg-vora-background text-vora-text-tertiary"}`}
+                      >
+                        <Plus
+                          className={`w-6 h-6 transition-transform duration-500 ${addToLibrary ? "rotate-90" : ""}`}
+                        />
                       </div>
                       <div>
-                        <p className={`text-[11px] font-bold uppercase tracking-widest transition-colors ${addToLibrary ? "text-vora-primary" : "text-vora-text-secondary opacity-60"}`}>Kütüphaneme Ekle</p>
-                        <p className="text-[9px] text-vora-text-tertiary uppercase font-medium">Bu besini favorilerine dahil et</p>
+                        <p
+                          className={`text-[11px] font-bold uppercase tracking-widest transition-colors ${addToLibrary ? "text-vora-primary" : "text-vora-text-secondary opacity-60"}`}
+                        >
+                          Kütüphaneme Ekle
+                        </p>
+                        <p className="text-[9px] text-vora-text-tertiary uppercase font-medium">
+                          Bu besini favorilerine dahil et
+                        </p>
                       </div>
                     </div>
-                    <div className={`w-14 h-7 rounded-full p-1 transition-all duration-500 relative ${addToLibrary ? "bg-vora-accent" : "bg-vora-background border border-vora-border"}`}>
-                      <motion.div 
+                    <div
+                      className={`w-14 h-7 rounded-full p-1 transition-all duration-500 relative ${addToLibrary ? "bg-vora-accent" : "bg-vora-background border border-vora-border"}`}
+                    >
+                      <motion.div
                         animate={{ x: addToLibrary ? 28 : 0 }}
                         className="w-5 h-5 bg-white rounded-full shadow-xl z-10 relative"
                       />
-                      <div className={`absolute inset-0 rounded-full transition-opacity duration-500 ${addToLibrary ? "opacity-100" : "opacity-0"} bg-gradient-to-r from-vora-accent to-vora-accent-bright animate-pulse`} />
+                      <div
+                        className={`absolute inset-0 rounded-full transition-opacity duration-500 ${addToLibrary ? "opacity-100" : "opacity-0"} bg-gradient-to-r from-vora-accent to-vora-accent-bright animate-pulse`}
+                      />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-4 gap-4 p-6 bg-vora-surface-raised rounded-3xl border border-vora-border text-center shadow-inner">
                     <div className="space-y-1">
-                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">Kcal</p>
+                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">
+                        Kcal
+                      </p>
                       <p className="font-black text-lg text-vora-primary tracking-tighter">
-                        {Math.round((selectedFood.calories / 100) * (Number(amount) || 0))}
+                        {Math.round(
+                          (selectedFood.calories / 100) * (Number(amount) || 0),
+                        )}
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">Prot</p>
+                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">
+                        Prot
+                      </p>
                       <p className="font-black text-lg text-vora-primary tracking-tighter">
-                        {Math.round((selectedFood.protein / 100) * (Number(amount) || 0))}g
+                        {Math.round(
+                          (selectedFood.protein / 100) * (Number(amount) || 0),
+                        )}
+                        g
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">Karb</p>
+                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">
+                        Karb
+                      </p>
                       <p className="font-black text-lg text-vora-primary tracking-tighter">
-                        {Math.round((selectedFood.carbs / 100) * (Number(amount) || 0))}g
+                        {Math.round(
+                          (selectedFood.carbs / 100) * (Number(amount) || 0),
+                        )}
+                        g
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">Yağ</p>
+                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">
+                        Yağ
+                      </p>
                       <p className="font-black text-lg text-vora-primary tracking-tighter">
-                        {Math.round((selectedFood.fat / 100) * (Number(amount) || 0))}g
+                        {Math.round(
+                          (selectedFood.fat / 100) * (Number(amount) || 0),
+                        )}
+                        g
                       </p>
                     </div>
                   </div>
@@ -495,58 +530,72 @@ export default function DiaryPage() {
       {/* Scanner Overlay (Vora Vision) */}
       <AnimatePresence>
         {showScanner && (
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-vora-background/98 flex items-center justify-center p-6 backdrop-blur-sm"
           >
             <div className="w-full max-w-xl bg-vora-surface border border-vora-border/20 rounded-[3rem] p-12 relative shadow-2xl text-center overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-vora-accent/20 animate-pulse" />
-              <button onClick={() => setShowScanner(false)} className="absolute top-8 right-8 text-vora-tertiary hover:text-vora-accent transition-colors">
+              <button
+                onClick={() => setShowScanner(false)}
+                className="absolute top-8 right-8 text-vora-tertiary hover:text-vora-accent transition-colors"
+              >
                 <X className="w-6 h-6" />
               </button>
-              
+
               <div className="mb-10 inline-block p-8 rounded-[2.5rem] bg-vora-accent/[0.03] border border-vora-accent/20 relative group">
                 <Barcode className="w-16 h-16 text-vora-accent shadow-[0_0_30px_rgba(var(--color-accent),0.4)]" />
                 <div className="absolute inset-0 border-2 border-vora-accent/20 rounded-[2.5rem] animate-ping opacity-20" />
               </div>
-              
-              <h2 className="text-3xl font-light tracking-[0.3em] uppercase mb-4 text-vora-primary">Vora <span className="font-bold text-vora-accent">Vision</span></h2>
-              <p className="text-[10px] text-vora-tertiary uppercase tracking-widest mb-12 font-bold opacity-60">Ürün barkodunu tarayarak saniyeler içinde kaydet.</p>
-              
+
+              <h2 className="text-3xl font-light tracking-[0.3em] uppercase mb-4 text-vora-primary">
+                Vora <span className="font-bold text-vora-accent">Vision</span>
+              </h2>
+              <p className="text-[10px] text-vora-tertiary uppercase tracking-widest mb-12 font-bold opacity-60">
+                Ürün barkodunu tarayarak saniyeler içinde kaydet.
+              </p>
+
               <div className="grid grid-cols-1 gap-4 max-w-xs mx-auto">
-                <div id="reader" className="hidden" /> {/* Arka planda çalışacak motor */}
-                
-                <button 
+                <div id="reader" className="hidden" />{" "}
+                {/* Arka planda çalışacak motor */}
+                <button
                   onClick={() => {
-                    const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
-                    document.getElementById('reader')?.classList.remove('hidden');
+                    const scanner = new Html5QrcodeScanner(
+                      "reader",
+                      { fps: 10, qrbox: 250 },
+                      false,
+                    );
+                    document
+                      .getElementById("reader")
+                      ?.classList.remove("hidden");
                     scanner.render(onScanSuccess, (err) => {});
                   }}
                   className="w-full py-6 bg-vora-accent text-vora-on-accent rounded-[2rem] font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-3 shadow-2xl shadow-vora-accent/20 hover:brightness-110 active:scale-95 transition-all"
                 >
                   <Camera className="w-5 h-5" /> Kamerayı Başlat
                 </button>
-
                 <div className="flex items-center gap-4 py-2">
                   <div className="h-[1px] flex-1 bg-vora-border/20" />
-                  <span className="text-[8px] font-bold text-vora-tertiary uppercase">veya</span>
+                  <span className="text-[8px] font-bold text-vora-tertiary uppercase">
+                    veya
+                  </span>
                   <div className="h-[1px] flex-1 bg-vora-border/20" />
                 </div>
-
                 <div className="flex gap-2 bg-white/5 p-2 rounded-2xl border border-vora-border/20">
-                  <input 
-                    type="text" 
-                    placeholder="Barkod No Gir" 
+                  <input
+                    type="text"
+                    placeholder="Barkod No Gir"
                     className="flex-1 bg-transparent text-[10px] font-bold px-4 outline-none uppercase tracking-widest text-white"
                     onKeyDown={(e: any) => {
-                      if (e.key === 'Enter') onScanSuccess(e.target.value);
+                      if (e.key === "Enter") onScanSuccess(e.target.value);
                     }}
                   />
                   <div className="p-2 bg-vora-accent/10 text-vora-accent rounded-xl">
                     <ChevronRight className="w-4 h-4" />
                   </div>
                 </div>
-
                 <button className="w-full py-5 bg-white/[0.02] border border-white/10 rounded-[2rem] font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-white/[0.05] transition-all mt-2">
                   <Upload className="w-4 h-4" /> Barkod Fotoğrafı Yükle
                 </button>

@@ -1,14 +1,13 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function DashboardRedirect() {
   const router = useRouter();
 
   useEffect(() => {
-    // Yanlışlıkla /dashboard adresine gelenleri ana sayfaya (Hub) fırlatıyoruz
-    router.replace('/');
+    router.replace("/");
   }, [router]);
 
   return (

@@ -56,6 +56,7 @@ model User {
   refreshToken String?
 
   @@map("users")
+  @@index([email])
 }
 
 model Profile {
@@ -100,6 +101,8 @@ model Food {
   updatedAt   DateTime @updatedAt
 
   @@map("foods")
+  @@index([barcode])
+  @@index([name])
 }
 
 model Meal {
@@ -116,21 +119,26 @@ model Meal {
   updatedAt DateTime   @updatedAt
 
   @@map("meals")
+  @@index([userId, date])
 }
 
 model MealItem {
-  id        String   @id @default(cuid())
-  amount    Float    // gram veya ml cinsinden
+  id          String   @id @default(cuid())
+  amount      Float    // gram veya ml cinsinden
+  customName  String?  // Kullanıcının verdiği özel isim
+  note        String?  // Ekstra not (örn: "Bol tuzlu")
   
-  mealId    String
-  meal      Meal     @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  mealId      String
+  meal        Meal     @relation(fields: [mealId], references: [id], onDelete: Cascade)
   
-  foodId    String
-  food      Food     @relation(fields: [foodId], references: [id])
+  foodId      String
+  food        Food     @relation(fields: [foodId], references: [id])
 
-  createdAt DateTime @default(now())
+  createdAt   DateTime @default(now())
 
   @@map("meal_items")
+  @@index([mealId])
+  @@index([foodId])
 }
 
 model WaterLog {
@@ -144,4 +152,5 @@ model WaterLog {
   createdAt DateTime @default(now())
 
   @@map("water_logs")
+  @@index([userId, date])
 }
