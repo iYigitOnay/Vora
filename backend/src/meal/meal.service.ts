@@ -1,13 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { MealType } from '@prisma/client';
+import { MealType, FoodStatus } from '@prisma/client';
 
 @Injectable()
 export class MealService {
   constructor(private prisma: PrismaService) {}
 
   async logMeal(userId: string, data: { 
-    foodId: string; 
+    foodId?: string; 
+    foodData?: any; // Vision AI'dan gelen ham veri
     type: MealType; 
     amount: number; 
     date?: string;
@@ -19,40 +20,53 @@ export class MealService {
     const endOfDay = new Date(logDate.setHours(23, 59, 59, 999));
 
     return this.prisma.$transaction(async (tx) => {
-      // 1. O gün için bu tipte bir Meal var mı bak, yoksa oluştur (Atomik)
+      let finalFoodId = data.foodId;
+
+      // Senior Fix: Eğer foodId yoksa ama Vision verisi varsa, önce besini oluştur/bul
+      if (!finalFoodId && data.foodData) {
+        const food = await tx.food.create({
+          data: {
+            name: data.foodData.name,
+            brand: data.foodData.brand || 'AI VISION',
+            calories: Number(data.foodData.calories),
+            protein: Number(data.foodData.protein),
+            carbs: Number(data.foodData.carbs),
+            fat: Number(data.foodData.fat),
+            status: FoodStatus.COMMUNITY,
+            image: data.foodData.image,
+            isGlobal: true,
+          }
+        });
+        finalFoodId = food.id;
+      }
+
+      if (!finalFoodId) throw new BadRequestException('Besin bilgisi eksik.');
+
+      // 1. O gün için bu tipte bir Meal var mı bak
       let meal = await tx.meal.findFirst({
         where: {
           userId,
           type: data.type,
-          date: {
-            gte: startOfDay,
-            lte: endOfDay,
-          },
+          date: { gte: startOfDay, lte: endOfDay },
         },
       });
 
       if (!meal) {
         meal = await tx.meal.create({
-          data: {
-            userId,
-            type: data.type,
-            date: new Date(), // Orijinal kayıt zamanı
-          },
+          data: { userId, type: data.type, date: new Date() },
         });
       }
 
-      // 2. MealItem'ı ekle (customName ve note ile birlikte)
+      // 2. MealItem'ı ekle
       return tx.mealItem.create({
         data: {
           mealId: meal.id,
-          foodId: data.foodId,
+          foodId: finalFoodId,
           amount: data.amount,
           customName: data.customName || null,
           note: data.note || null,
         },
-        include: {
-          food: true,
-        },
+        include: { food: true },
       });
     });
   }
@@ -68,9 +82,7 @@ export class MealService {
         },
       },
       include: {
-        items: {
-          include: { food: true },
-        },
+        items: { include: { food: true } },
       },
     });
   }
@@ -83,10 +95,7 @@ export class MealService {
 
   async logWater(userId: string, amount: number) {
     return this.prisma.waterLog.create({
-      data: {
-        userId,
-        amount,
-      },
+      data: { userId, amount },
     });
   }
 }

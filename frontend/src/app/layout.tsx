@@ -55,13 +55,13 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex bg-vora-background text-vora-primary selection:bg-vora-accent/30">
+      <body className="min-h-full flex bg-vora-background text-vora-primary selection:bg-vora-accent/30 overflow-x-hidden">
         <ThemeProvider>
           <Notification />
           {!isAuthPage && <Sidebar />}
           <main className={cn(
             "flex-1 min-h-screen",
-            !isAuthPage ? "pl-[280px]" : "pl-0"
+            !isAuthPage ? "pl-0 md:pl-[280px]" : "pl-0"
           )}>
             <div className="p-8 md:p-12 max-w-[1600px] mx-auto">
               {children}

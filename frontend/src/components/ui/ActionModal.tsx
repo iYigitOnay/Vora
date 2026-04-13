@@ -8,24 +8,21 @@ interface ActionModalProps {
   onClose: () => void;
   title: React.ReactNode;
   subtitle?: string;
-  icon?: React.ElementType;
+  icon?: any;
   children: React.ReactNode;
 }
 
-export function ActionModal({
-  onClose,
-  title,
-  subtitle,
-  icon: Icon,
-  children,
-}: ActionModalProps) {
-  // ESC ile kapatma
+export function ActionModal({ onClose, title, subtitle, icon: Icon, children }: ActionModalProps) {
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener('keydown', handleEsc);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+      document.body.style.overflow = 'unset';
+    };
   }, [onClose]);
 
   const displayTitle = typeof title === 'string' ? title : '';
@@ -46,22 +43,23 @@ export function ActionModal({
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl h-[650px] bg-vora-surface border border-vora-border/20 rounded-[3rem] relative shadow-2xl overflow-hidden flex flex-col cursor-default"
+        // Senior Standard: 500x600 fixed frame. No scrolling, no height jumps.
+        className="w-full max-w-[500px] h-[600px] bg-vora-surface border border-vora-border/20 rounded-[3rem] relative shadow-2xl overflow-hidden flex flex-col cursor-default"
       >
-        {/* Sabit Header */}
-        <div className="p-8 pb-4 flex items-center justify-between shrink-0">
+        {/* Fixed Header (80px) */}
+        <div className="h-[100px] px-8 flex items-center justify-between shrink-0 border-b border-white/[0.02]">
           <div className="flex items-center gap-5">
             {Icon && (
-              <div className="p-3.5 bg-vora-accent/10 text-vora-accent rounded-2xl border border-vora-accent/10">
-                <Icon className="w-6 h-6" />
+              <div className="p-3 bg-vora-accent/10 text-vora-accent rounded-2xl border border-vora-accent/10">
+                <Icon className="w-5 h-5" />
               </div>
             )}
             <div>
-              <h2 className="text-2xl font-light tracking-[0.2em] uppercase text-vora-primary leading-none">
+              <h2 className="text-xl font-light tracking-[0.2em] uppercase text-vora-primary leading-none">
                 {firstWord} <span className="font-bold text-vora-accent">{restOfTitle}</span>
               </h2>
               {subtitle && (
-                <p className="text-[10px] font-bold text-vora-tertiary uppercase tracking-[0.3em] mt-2 opacity-60 italic">
+                <p className="text-[9px] text-vora-tertiary uppercase tracking-[0.3em] mt-2 font-bold opacity-40 italic">
                   {subtitle}
                 </p>
               )}
@@ -69,22 +67,25 @@ export function ActionModal({
           </div>
           <button
             onClick={onClose}
-            className="p-3 hover:bg-white/5 rounded-full text-vora-tertiary hover:text-vora-primary transition-all"
+            className="p-2 hover:bg-white/5 rounded-xl transition-colors text-vora-tertiary group"
           >
-            <X className="w-6 h-6" />
+            <X className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
           </button>
         </div>
 
-        {/* Dinamik İçerik Alanı */}
-        <div className="flex-1 overflow-y-auto px-8 pb-8 custom-scrollbar">
+        {/* Action Content (420px) - Center aligned, No scrolling allowed */}
+        <div className="flex-1 px-8 overflow-hidden relative">
           {children}
         </div>
 
-        {/* Sabit Footer Branding */}
-        <div className="p-6 pt-0 text-center shrink-0">
-          <p className="text-[8px] text-vora-tertiary uppercase tracking-[0.4em] font-bold opacity-20 italic">
-            Vora Sustainable Health Architecture
-          </p>
+        {/* Fixed Footer (80px) */}
+        <div className="h-[80px] border-t border-vora-border/5 bg-white/[0.01] flex justify-center items-center shrink-0">
+          <div className="flex items-center gap-2.5 opacity-20">
+            <div className="w-1 h-1 rounded-full bg-vora-accent animate-pulse" />
+            <p className="text-[7px] text-vora-tertiary uppercase tracking-[0.6em] font-bold italic">
+              VORA SYSTEM ARCHITECTURE
+            </p>
+          </div>
         </div>
       </motion.div>
     </motion.div>

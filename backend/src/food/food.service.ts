@@ -10,22 +10,19 @@ export class FoodService {
   constructor(private prisma: PrismaService) {}
 
   async scanBarcode(barcode: string, userId: string) {
-    // 1. Önce bizim DB'de var mı bak
     const existingFood = await this.prisma.food.findUnique({
       where: { barcode },
     });
 
-    // Senior Gizlilik Kuralı: Eğer ürün PRIVATE ise ve taratan kişi creator değilse, DB'dekini YOK SAY.
     if (existingFood) {
+      // Senior Fix: Katı Gizlilik. Eğer ürün PRIVATE ise ve taratan kişi creator değilse, DB'dekini YOK SAY.
       if (existingFood.status === FoodStatus.PRIVATE && existingFood.creatorId !== userId) {
-        this.logger.warn(`Gizli ürüne erişim engellendi: ${barcode} (User: ${userId})`);
-        // DB'de yokmuş gibi davranıp API'ye gitmesini sağlayacağız
+        this.logger.warn(`Gizli ürüne (PRIVATE) yetkisiz barkod erişimi engellendi: ${barcode}`);
       } else {
         return existingFood;
       }
     }
 
-    // 2. Yoksa veya gizliyse Open Food Facts API'sine sor
     try {
       const response = await axios.get(
         `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`
@@ -76,12 +73,7 @@ export class FoodService {
             OR: [
               { status: FoodStatus.VERIFIED },
               { status: FoodStatus.COMMUNITY },
-              { 
-                AND: [
-                  { status: FoodStatus.PRIVATE }, 
-                  { creatorId: userId } // KESİN GİZLİLİK
-                ] 
-              }
+              { AND: [{ status: FoodStatus.PRIVATE }, { creatorId: userId }] }
             ]
           }
         ]
@@ -102,7 +94,7 @@ export class FoodService {
         fat: Number(data.fat),
         defaultAmount: Number(data.defaultAmount) || 100,
         creatorId: userId,
-        status: FoodStatus.PRIVATE, // KESİNLİKLE GİZLİ
+        status: FoodStatus.PRIVATE, 
       },
     });
   }
