@@ -11,3 +11,4 @@
 - **ID Yapısı (CUID2):** Veritabanı ID'lerinde UUID yerine CUID2 kullanılarak hem tahmin edilebilirlik engellendi hem de yatay ölçekleme (scaling) için sağlam bir temel atıldı.
 - **Dockerizasyon:** DB ve Backend'i izole container'larda tutmak, bağımlılık çakışmalarını önledi ve yerel geliştirmeyi hızlandırdı.
 - **Atomic Registration:** Kullanıcı ve profil verilerinin tek bir transaction ile oluşturulması, veritabanı bütünlüğünü korumak için elzemdir.
+- **Performans vs Estetik (Blur):** Cam (glassmorphism) efekti için `backdrop-blur-xl` yerine `sm` kullanmak, görsel derinliği korurken 60 FPS akıcılığını sağlamak için kritik bir "Senior" tercihidir.

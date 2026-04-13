@@ -1,17 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useThemeStore } from '@/store/useThemeStore';
+import { useThemeStore, PersonaTheme } from '@/store/useThemeStore';
 import { useRouter } from 'next/navigation';
 import Lottie from 'lottie-react';
 import Image from 'next/image';
 import api from '@/lib/api';
-import { ActivityLevel, Gender, Goal, Persona } from '@/types/auth';
+import { ActivityLevel, Gender, Goal } from '@/types/auth';
 import { 
   Flame, Zap, Sparkles, 
   Mail, Lock, User, Ruler, Weight, Target, Calendar,
-  ChevronRight, ChevronLeft
+  ChevronRight, ChevronLeft, Droplets, Leaf, Check, AlertCircle
 } from 'lucide-react';
 
 // Soft Underlined Input Component
@@ -25,9 +25,20 @@ const UnderlinedInput = ({ label, icon: Icon, ...props }: any) => (
       <input
         {...props}
         autoComplete="off"
-        className={`w-full bg-transparent border-b border-vora-border/40 py-2.5 ${Icon ? 'pl-7' : 'pl-0'} focus:border-vora-accent outline-none transition-all text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+        className={`w-full bg-transparent border-b border-vora-border/40 py-2.5 ${Icon ? 'pl-7' : 'pl-0'} focus:border-vora-accent outline-none transition-all text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-vora-primary`}
       />
     </div>
+  </div>
+);
+
+const PasswordRequirement = ({ met, label }: { met: boolean, label: string }) => (
+  <div className={`flex items-center gap-2 transition-all duration-500 ${met ? 'opacity-100' : 'opacity-30'}`}>
+    <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${met ? 'bg-vora-accent text-vora-on-accent' : 'bg-white/10 text-transparent'}`}>
+      <Check className="w-2.5 h-2.5" />
+    </div>
+    <span className={`text-[8px] font-bold uppercase tracking-widest ${met ? 'text-vora-accent' : 'text-vora-tertiary'}`}>
+      {label}
+    </span>
   </div>
 );
 
@@ -48,17 +59,47 @@ export default function AuthPage() {
     email: '', password: '', firstName: '', age: '' as any,
     gender: 'MALE' as Gender, height: '' as any, weight: '' as any, targetWeight: '' as any,
     activityLevel: 'MODERATELY_ACTIVE' as ActivityLevel, goal: 'MAINTAIN_WEIGHT' as Goal,
-    selectedPersona: 'CHARCOAL' as Persona,
+    selectedPersona: 'EMBER_MOSS' as any,
   });
 
-  const nextStep = () => setStep(s => s + 1);
+  // Password Validation Logic
+  const passwordCriteria = useMemo(() => ({
+    length: formData.password.length >= 8,
+    uppercase: /[A-Z]/.test(formData.password),
+    numberOrSpecial: /[0-9\W]/.test(formData.password)
+  }), [formData.password]);
+
+  const isPasswordValid = Object.values(passwordCriteria).every(Boolean);
+
+  const nextStep = async () => {
+    if (step === 1) {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await api.get(`/auth/check-email?email=${formData.email}`);
+        if (res.data.exists) {
+          setError("Bu e-posta zaten kullanımda.");
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.error("Email check error:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    setStep(s => s + 1);
+  };
+
   const prevStep = () => setStep(s => s - 1);
 
   const handleGoalChange = (goal: Goal) => {
     setFormData({ ...formData, goal });
-    if (goal === 'LOSE_WEIGHT') { setTheme('aura-light'); setFormData(prev => ({ ...prev, selectedPersona: 'ARCTIC' })); }
-    else if (goal === 'GAIN_WEIGHT') { setTheme('forge-mode'); setFormData(prev => ({ ...prev, selectedPersona: 'OBSIDIAN' })); }
-    else { setTheme('neural-dark'); setFormData(prev => ({ ...prev, selectedPersona: 'CHARCOAL' })); }
+  };
+
+  const handleNumericInput = (field: string, val: string) => {
+    const cleaned = val.replace(/[^0-9]/g, '').slice(0, 3);
+    setFormData({ ...formData, [field]: cleaned });
   };
 
   const handleSubmit = async () => {
@@ -75,20 +116,19 @@ export default function AuthPage() {
       };
       const res = await api.post(endpoint, payload);
       localStorage.setItem('vora_access_token', res.data.access_token);
-      router.push('/dashboard');
+      router.push('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Bağlantı hatası.');
+      setError(err.response?.data?.message || 'Giriş yapılamadı.');
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-vora-background text-vora-primary flex items-center justify-center p-4 transition-colors duration-1000 font-sans select-none overflow-hidden">
+    <div className="h-screen w-screen bg-vora-background text-vora-primary flex items-center justify-center p-4 transition-colors duration-1000 font-sans select-none overflow-hidden fixed inset-0">
       
-      {/* Global Loading Overlay */}
       <AnimatePresence>
         {loading && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-vora-background/95 backdrop-blur-md flex flex-col items-center justify-center">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-vora-background/95 backdrop-blur-md flex flex-col items-center justify-center">
             <div className="w-44 h-44">
               {lottieData && <Lottie animationData={lottieData} loop={true} />}
             </div>
@@ -99,15 +139,14 @@ export default function AuthPage() {
 
       <div className="w-full max-w-4xl flex flex-col md:flex-row bg-vora-surface rounded-[2.5rem] border border-vora-border/20 shadow-2xl relative overflow-hidden h-[640px]">
         
-        {/* INFO PANEL (Logo & Slogan) */}
         <motion.div 
           initial={false}
           animate={{ x: isLogin ? 0 : '100%' }}
-          transition={{ type: "spring", damping: 26, stiffness: 80, restDelta: 0.001 }}
+          transition={{ type: "spring", damping: 26, stiffness: 80 }}
           className="absolute inset-y-0 left-0 w-full md:w-1/2 p-12 bg-gradient-to-br from-vora-accent/[0.05] to-transparent flex flex-col justify-center items-center text-center z-20 border-x border-vora-border/10 h-full"
         >
           <div className="flex flex-col items-center">
-            <motion.div whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
+            <motion.div whileHover={{ scale: 1.02 }}>
               <Image src="/vorakurt.png" alt="Vora" width={145} height={145} className="mb-10 drop-shadow-2xl opacity-95" />
             </motion.div>
             <h1 className="text-4xl font-light tracking-[0.6em] mb-4 pl-[0.6em]">VORA</h1>
@@ -118,11 +157,11 @@ export default function AuthPage() {
           </div>
 
           <div className="absolute bottom-12 flex flex-col items-center">
-            <h3 className="text-[12px] font-bold tracking-[0.2em] text-vora-primary mb-1 uppercase text-center w-full">
+            <h3 className="text-[12px] font-bold tracking-[0.2em] text-vora-primary mb-1 uppercase text-center w-full opacity-40">
               {isLogin ? 'Değişimi Başlat' : 'Yuvana Dön'}
             </h3>
             <button 
-              onClick={() => { setIsLogin(!isLogin); setStep(1); }}
+              onClick={() => { setIsLogin(!isLogin); setStep(1); setError(null); }}
               className="group text-vora-accent text-[9px] font-bold uppercase tracking-[0.3em] flex flex-col items-center gap-1 w-full"
             >
               <span className="text-center">{isLogin ? 'Kayıt Ol' : 'Giriş Yap'}</span>
@@ -131,7 +170,6 @@ export default function AuthPage() {
           </div>
         </motion.div>
 
-        {/* FORM PANEL */}
         <motion.div 
           initial={false}
           animate={{ x: isLogin ? '100%' : 0 }}
@@ -167,17 +205,27 @@ export default function AuthPage() {
                     {step === 1 && (
                       <motion.form 
                         key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                        onSubmit={(e) => { e.preventDefault(); if (formData.firstName && formData.email && formData.password.length >= 6) nextStep(); }}
+                        onSubmit={(e) => { e.preventDefault(); nextStep(); }}
                         className="space-y-8"
                       >
-                        <div className="text-center space-y-2 mb-10">
+                        <div className="text-center space-y-2 mb-6">
                           <h2 className="text-xl font-light tracking-[0.3em] uppercase">KİMLİK</h2>
                           <p className="text-vora-tertiary text-[8px] tracking-[0.2em] uppercase opacity-50 font-bold italic">Sana nasıl seslenelim?</p>
                         </div>
-                        <UnderlinedInput label="İSİM" icon={User} type="text" required placeholder="Adınız Soyadınız" value={formData.firstName} onChange={(e:any) => setFormData({...formData, firstName: e.target.value})} />
-                        <UnderlinedInput label="E-POSTA" icon={Mail} type="email" required placeholder="adiniz@email.com" value={formData.email} onChange={(e:any) => setFormData({...formData, email: e.target.value})} />
-                        <UnderlinedInput label="ŞİFRE" icon={Lock} type="password" required placeholder="Minimum 6 Karakter" value={formData.password} onChange={(e:any) => setFormData({...formData, password: e.target.value})} />
-                        <button type="submit" disabled={!formData.firstName || !formData.email || formData.password.length < 6} className="w-full border border-vora-border/40 text-vora-accent text-[10px] font-bold py-4 rounded-full tracking-[0.3em] uppercase hover:bg-vora-accent/5 disabled:opacity-20 transition-all">İLERİ</button>
+                        <div className="space-y-2">
+                          <UnderlinedInput label="İSİM" icon={User} type="text" required placeholder="Adınız Soyadınız" value={formData.firstName} onChange={(e:any) => setFormData({...formData, firstName: e.target.value})} />
+                          <UnderlinedInput label="E-POSTA" icon={Mail} type="email" required placeholder="adiniz@email.com" value={formData.email} onChange={(e:any) => setFormData({...formData, email: e.target.value})} />
+                          <UnderlinedInput label="ŞİFRE" icon={Lock} type="password" required placeholder="Minimum 8 Karakter" value={formData.password} onChange={(e:any) => setFormData({...formData, password: e.target.value})} />
+                        </div>
+
+                        {/* Password Requirements Checklist */}
+                        <div className="bg-white/[0.02] border border-vora-border/10 rounded-2xl p-4 space-y-2.5">
+                          <PasswordRequirement met={passwordCriteria.length} label="EN AZ 8 KARAKTER" />
+                          <PasswordRequirement met={passwordCriteria.uppercase} label="EN AZ 1 BÜYÜK HARF" />
+                          <PasswordRequirement met={passwordCriteria.numberOrSpecial} label="RAKAM VEYA ÖZEL KARAKTER" />
+                        </div>
+
+                        <button type="submit" disabled={!formData.firstName || !formData.email || !isPasswordValid} className="w-full bg-vora-accent text-vora-on-accent text-[10px] font-bold py-4 rounded-full tracking-[0.3em] uppercase disabled:opacity-20 transition-all shadow-lg shadow-vora-accent/10">İLERİ</button>
                       </motion.form>
                     )}
 
@@ -205,10 +253,10 @@ export default function AuthPage() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-x-10 gap-y-6">
-                          <UnderlinedInput label="YAŞ" icon={Calendar} type="number" required placeholder="25" value={formData.age} onChange={(e:any) => setFormData({...formData, age: e.target.value})} />
-                          <UnderlinedInput label="BOY (CM)" icon={Ruler} type="number" required placeholder="180" value={formData.height} onChange={(e:any) => setFormData({...formData, height: e.target.value})} />
-                          <UnderlinedInput label="KİLO (KG)" icon={Weight} type="number" required placeholder="75" value={formData.weight} onChange={(e:any) => setFormData({...formData, weight: e.target.value})} />
-                          <UnderlinedInput label="HEDEF (KG)" icon={Target} type="number" required placeholder="70" value={formData.targetWeight} onChange={(e:any) => setFormData({...formData, targetWeight: e.target.value})} />
+                          <UnderlinedInput label="YAŞ" icon={Calendar} type="number" required placeholder="25" value={formData.age} onChange={(e:any) => handleNumericInput('age', e.target.value)} />
+                          <UnderlinedInput label="BOY (CM)" icon={Ruler} type="number" required placeholder="180" value={formData.height} onChange={(e:any) => handleNumericInput('height', e.target.value)} />
+                          <UnderlinedInput label="KİLO (KG)" icon={Weight} type="number" required placeholder="75" value={formData.weight} onChange={(e:any) => handleNumericInput('weight', e.target.value)} />
+                          <UnderlinedInput label="HEDEF (KG)" icon={Target} type="number" required placeholder="70" value={formData.targetWeight} onChange={(e:any) => handleNumericInput('targetWeight', e.target.value)} />
                         </div>
                         
                         <div className="flex gap-6 pt-6">
@@ -224,7 +272,7 @@ export default function AuthPage() {
                           <h2 className="text-xl font-light tracking-[0.3em] uppercase">TEMPO</h2>
                           <p className="text-vora-tertiary text-[8px] tracking-[0.2em] uppercase opacity-50 font-bold italic">Günlük enerjin nasıl?</p>
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-3 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
                           {[
                             { id: 'SEDENTARY', l: 'Minimalist', d: 'Masa başı iş, az hareket alanı.' },
                             { id: 'LIGHTLY_ACTIVE', l: 'Dengeli', d: 'Kısa yürüyüşler, hafif egzersiz.' },
@@ -238,7 +286,7 @@ export default function AuthPage() {
                               className={`w-full p-5 rounded-2xl border text-left transition-all ${formData.activityLevel === act.id ? 'border-vora-accent bg-vora-accent/5' : 'border-vora-border/10 opacity-40 hover:opacity-100'}`}
                             >
                               <div className="flex justify-between items-center mb-1.5">
-                                <span className="text-[11px] font-bold tracking-widest uppercase">{act.l}</span>
+                                <span className="text-[11px] font-bold tracking-widest uppercase text-vora-primary">{act.l}</span>
                                 {formData.activityLevel === act.id && <Zap className="w-3 h-3 text-vora-accent fill-vora-accent" />}
                               </div>
                               <p className="text-[9px] font-medium text-vora-secondary uppercase tracking-tight opacity-80 leading-relaxed">{act.d}</p>
@@ -264,7 +312,7 @@ export default function AuthPage() {
                             <p className="text-[9px] font-bold text-vora-tertiary mb-3 uppercase tracking-widest">Hedefin Nedir?</p>
                             <div className="grid grid-cols-3 gap-3">
                               {[{ id: 'LOSE_WEIGHT', icon: Sparkles, l: 'DİYET' }, { id: 'MAINTAIN_WEIGHT', icon: Zap, l: 'DENGE' }, { id: 'GAIN_WEIGHT', icon: Flame, l: 'GÜÇ' }].map(g => (
-                                <button type="button" key={g.id} onClick={() => setFormData({...formData, goal: g.id as Goal})} className={`p-3.5 rounded-xl border transition-all ${formData.goal === g.id ? 'border-vora-accent bg-vora-accent/5' : 'border-vora-border/10 opacity-30'}`}>
+                                <button type="button" key={g.id} onClick={() => handleGoalChange(g.id as Goal)} className={`p-3.5 rounded-xl border transition-all ${formData.goal === g.id ? 'border-vora-accent bg-vora-accent/5' : 'border-vora-border/10 opacity-30'}`}>
                                   <g.icon className={`w-4.5 h-4.5 mx-auto mb-2 ${formData.goal === g.id ? 'text-vora-accent' : 'text-vora-tertiary'}`} />
                                   <span className="text-[8px] font-bold tracking-widest">{g.l}</span>
                                 </button>
@@ -274,15 +322,16 @@ export default function AuthPage() {
 
                           <div>
                             <p className="text-[9px] font-bold text-vora-tertiary mb-3 uppercase tracking-widest">Persona / Tema Seçimi</p>
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-4 gap-2">
                               {[
-                                { id: 'ARCTIC', icon: Sparkles, l: 'ARCTIC', t: 'aura-light' },
-                                { id: 'CHARCOAL', icon: Zap, l: 'CHARCOAL', t: 'neural-dark' },
-                                { id: 'OBSIDIAN', icon: Flame, l: 'OBSIDIAN', t: 'forge-mode' }
+                                { id: 'EMBER_MOSS', icon: Leaf, l: 'EMBER', t: 'EMBER_MOSS' },
+                                { id: 'AURA_LIGHT', icon: Sparkles, l: 'AURA', t: 'AURA_LIGHT' },
+                                { id: 'NEURAL_DARK', icon: Zap, l: 'NEURAL', t: 'NEURAL_DARK' },
+                                { id: 'FORGE_MODE', icon: Flame, l: 'FORGE', t: 'FORGE_MODE' }
                               ].map(p => (
-                                <button type="button" key={p.id} onClick={() => { setFormData({...formData, selectedPersona: p.id as Persona}); setTheme(p.t as any); }} className={`p-3.5 rounded-xl border transition-all ${formData.selectedPersona === p.id ? 'border-vora-accent bg-vora-accent/5 shadow-[0_0_15px_rgba(var(--color-accent),0.1)]' : 'border-vora-border/10 opacity-30 hover:opacity-100'}`}>
-                                  <p.icon className={`w-4.5 h-4.5 mx-auto mb-2 ${formData.selectedPersona === p.id ? 'text-vora-accent' : 'text-vora-tertiary'}`} />
-                                  <span className="text-[8px] font-bold tracking-widest">{p.l}</span>
+                                <button type="button" key={p.id} onClick={() => { setFormData({...formData, selectedPersona: p.id as any}); setTheme(p.t as PersonaTheme); }} className={`p-3 rounded-xl border transition-all ${formData.selectedPersona === p.id ? 'border-vora-accent bg-vora-accent/5 shadow-[0_0_15px_rgba(var(--color-accent),0.1)]' : 'border-vora-border/10 opacity-30 hover:opacity-100'}`}>
+                                  <p.icon className={`w-4 h-4 mx-auto mb-1.5 ${formData.selectedPersona === p.id ? 'text-vora-accent' : 'text-vora-tertiary'}`} />
+                                  <span className="text-[7px] font-bold tracking-widest">{p.l}</span>
                                 </button>
                               ))}
                             </div>
@@ -303,7 +352,17 @@ export default function AuthPage() {
         </motion.div>
       </div>
 
-      {error && <div className="absolute top-10 left-1/2 -translate-x-1/2 bg-vora-error/10 text-vora-error text-[10px] font-bold py-2 px-6 rounded-full border border-vora-error/20 uppercase tracking-widest z-[60]">{error}</div>}
+      <AnimatePresence>
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+            className="absolute top-10 left-1/2 -translate-x-1/2 bg-vora-error/10 text-vora-error text-[10px] font-bold py-2.5 px-8 rounded-full border border-vora-error/20 uppercase tracking-[0.2em] z-[60] flex items-center gap-3 backdrop-blur-md shadow-2xl"
+          >
+            <AlertCircle className="w-4 h-4" />
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       <footer className="absolute bottom-10 left-1/2 -translate-x-1/2 text-vora-tertiary font-mono text-[8px] tracking-[0.8em] uppercase opacity-20">VORA REHAB SYST // 2026</footer>
     </div>

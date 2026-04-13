@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Notification } from "@/components/ui/Notification";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -56,6 +57,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex bg-vora-background text-vora-primary selection:bg-vora-accent/30">
         <ThemeProvider>
+          <Notification />
           {!isAuthPage && <Sidebar />}
           <main className={cn(
             "flex-1 min-h-screen",

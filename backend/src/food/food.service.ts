@@ -1,70 +1,108 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import axios from 'axios';
+import { FoodStatus } from '@prisma/client';
 
 @Injectable()
 export class FoodService {
+  private readonly logger = new Logger(FoodService.name);
+
   constructor(private prisma: PrismaService) {}
 
-  async scanBarcode(barcode: string) {
+  async scanBarcode(barcode: string, userId: string) {
     // 1. Önce bizim DB'de var mı bak
     const existingFood = await this.prisma.food.findUnique({
       where: { barcode },
     });
 
-    if (existingFood) return existingFood;
+    // Senior Gizlilik Kuralı: Eğer ürün PRIVATE ise ve taratan kişi creator değilse, DB'dekini YOK SAY.
+    if (existingFood) {
+      if (existingFood.status === FoodStatus.PRIVATE && existingFood.creatorId !== userId) {
+        this.logger.warn(`Gizli ürüne erişim engellendi: ${barcode} (User: ${userId})`);
+        // DB'de yokmuş gibi davranıp API'ye gitmesini sağlayacağız
+      } else {
+        return existingFood;
+      }
+    }
 
-    // 2. Yoksa Open Food Facts API'sine sor
+    // 2. Yoksa veya gizliyse Open Food Facts API'sine sor
     try {
       const response = await axios.get(
         `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`
       );
 
-      if (response.data.status === 0) {
-        throw new NotFoundException('Ürün bulunamadı.');
+      if (response.data.status === 0 || !response.data.product) {
+        throw new NotFoundException('Ürün kütüphanede bulunamadı.');
       }
 
       const product = response.data.product;
-      const nutriments = product.nutriments;
+      const nutriments = product.nutriments || {};
 
-      // Veriyi bizim formata çevir (100g/ml başına)
       const foodData = {
         name: product.product_name || 'Bilinmeyen Ürün',
         brand: product.brands || '',
-        calories: nutriments['energy-kcal_100g'] || 0,
-        protein: nutriments.protein_100g || 0,
-        carbs: nutriments.carbohydrates_100g || 0,
-        fat: nutriments.fat_100g || 0,
+        calories: Number(nutriments['energy-kcal_100g']) || 0,
+        protein: Number(nutriments.proteins_100g) || Number(nutriments.protein_100g) || 0,
+        carbs: Number(nutriments.carbohydrates_100g) || 0,
+        fat: Number(nutriments.fat_100g) || 0,
+        defaultAmount: Number(product.product_quantity) || 100,
         barcode: barcode,
         image: product.image_url || '',
-        isGlobal: true,
+        status: FoodStatus.COMMUNITY,
       };
 
-      // Yeni ürünü DB'ye kaydet ki bir sonrakinde hızlı gelsin
-      return await this.prisma.food.create({ data: foodData });
+      return await this.prisma.food.upsert({
+        where: { barcode },
+        update: foodData,
+        create: foodData,
+      });
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
-      throw new Error('Ürün sorgulama sırasında bir hata oluştu.');
+      throw new Error(`Ürün sorgulama hatası: ${error.message}`);
     }
   }
 
-  async search(query: string) {
+  async search(query: string, userId: string) {
     return this.prisma.food.findMany({
       where: {
-        OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { brand: { contains: query, mode: 'insensitive' } },
-        ],
+        AND: [
+          {
+            OR: [
+              { name: { contains: query, mode: 'insensitive' } },
+              { brand: { contains: query, mode: 'insensitive' } },
+            ],
+          },
+          {
+            OR: [
+              { status: FoodStatus.VERIFIED },
+              { status: FoodStatus.COMMUNITY },
+              { 
+                AND: [
+                  { status: FoodStatus.PRIVATE }, 
+                  { creatorId: userId } // KESİN GİZLİLİK
+                ] 
+              }
+            ]
+          }
+        ]
       },
       take: 20,
+      orderBy: { status: 'asc' }
     });
   }
 
-  async createManual(data: any) {
+  async createManual(data: any, userId: string) {
     return this.prisma.food.create({
       data: {
-        ...data,
-        isGlobal: false, // Kullanıcıya özel
+        name: data.name,
+        brand: data.brand,
+        calories: Number(data.calories),
+        protein: Number(data.protein),
+        carbs: Number(data.carbs),
+        fat: Number(data.fat),
+        defaultAmount: Number(data.defaultAmount) || 100,
+        creatorId: userId,
+        status: FoodStatus.PRIVATE, // KESİNLİKLE GİZLİ
       },
     });
   }

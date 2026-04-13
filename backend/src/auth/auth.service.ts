@@ -14,6 +14,13 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
+  async checkEmail(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    return { exists: !!user };
+  }
+
   async register(dto: RegisterDto) {
     const userExists = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -39,7 +46,7 @@ export class AuthService {
             targetWeight: dto.targetWeight,
             activityLevel: dto.activityLevel,
             goal: dto.goal,
-            selectedPersona: dto.selectedPersona || 'CHARCOAL',
+            selectedPersona: dto.selectedPersona || 'EMBER_MOSS',
           },
         },
       },

@@ -1,169 +1,48 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Plus,
-  Barcode,
-  Search,
-  X,
-  UtensilsCrossed,
-  Droplets,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Zap,
-  Trash2,
-  Camera,
-  Flame,
-  Upload,
-} from "lucide-react";
-
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { motion } from "framer-motion";
+import { Clock, UtensilsCrossed, Flame, Zap, Plus, Trash2, ChevronLeft, ChevronRight, Barcode, Search } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import api from "@/lib/api";
+import { DashboardHeader } from "@/components/dashboard/cards/DashboardHeader";
+import { useAppStore } from "@/store/useAppStore";
+import { QuickActionsManager, ActionType } from "@/components/dashboard/QuickActionsManager";
 
-const DiaryCard = ({
-  children,
-  title,
-  subtitle,
-  icon: Icon,
-  colorClass = "text-vora-accent",
-}: any) => (
+const BentoCard = ({ children, className, title, icon: Icon, colorClass = "text-vora-accent" }: any) => (
   <motion.div
-    initial={{ opacity: 0, y: 0 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="bg-vora-surface border border-vora-border/20 rounded-[2rem] p-6 hover:border-vora-border/40 transition-all group shadow-xl"
+    className={`bg-vora-surface border border-vora-border/20 rounded-[2.5rem] p-6 flex flex-col relative overflow-hidden group ${className}`}
   >
-    <div className="flex justify-between items-start mb-6">
-      <div className="flex items-center gap-4">
-        <div className={`p-3 bg-white/5 rounded-2xl ${colorClass}`}>
-          <Icon className="w-5 h-5" />
+    <div className="flex justify-between items-center mb-4">
+      <div className="flex items-center gap-3">
+        <div className={`p-2.5 bg-white/5 rounded-xl border border-white/5 ${colorClass}`}>
+          <Icon className="w-4 h-4" />
         </div>
-        <div>
-          <h3 className="text-sm font-bold tracking-widest uppercase">
-            {title}
-          </h3>
-          <p className="text-[10px] text-vora-tertiary uppercase tracking-tight">
-            {subtitle}
-          </p>
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <button className="p-2 hover:bg-white/5 rounded-full text-vora-tertiary opacity-0 group-hover:opacity-100 transition-all">
-          <Plus className="w-4 h-4" />
-        </button>
+        <h3 className="text-[10px] font-bold text-vora-tertiary uppercase tracking-[0.2em]">
+          {title}
+        </h3>
       </div>
     </div>
-    <div className="space-y-3">{children}</div>
+    <div className="flex-1 overflow-y-auto custom-scrollbar">{children}</div>
   </motion.div>
 );
 
-import { useSearchParams } from "next/navigation";
-
 export default function DiaryPage() {
-  const searchParams = useSearchParams();
-  const [showScanner, setShowScanner] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [selectedFood, setSelectedFood] = useState<any>(null);
-  const [amount, setAmount] = useState<string>("100");
-  const [addToLibrary, setAddToLibrary] = useState(false);
-  const [mealType, setMealType] = useState<string>("BREAKFAST");
-  const [dailyMeals, setDailyLogs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { user, dashboard } = useAppStore();
+  const [dailyMeals, setDailyMeals] = useState<any[]>([]);
+  const [activeAction, setActiveAction] = useState<ActionType>(null);
 
-  // URL'den barkod yakalama
-  useEffect(() => {
-    const scanQuery = searchParams.get("scan");
-    if (scanQuery) {
-      onScanSuccess(scanQuery);
-    }
-
-    const actionQuery = searchParams.get("action");
-    if (actionQuery === "scan") {
-      setShowScanner(true);
-    }
-  }, [searchParams]);
-
-  // Günlük kayıtları çek
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       const res = await api.get(`/meal/daily?date=${new Date().toISOString()}`);
-      setDailyLogs(res.data);
+      setDailyMeals(res.data);
     } catch (err) {
       console.error("Kayıtlar çekilemedi:", err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchLogs();
-  }, []);
-
-  // Yemek Ara
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (searchQuery.length > 2) {
-        try {
-          const res = await api.get(`/food/search?q=${searchQuery}`);
-          setSearchResults(res.data);
-        } catch (err) {
-          console.error("Arama hatası:", err);
-        }
-      }
-    }, 500);
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
-
-  // Barkod Okunduğunda
-  const onScanSuccess = async (result: string) => {
-    setLoading(true);
-    try {
-      const res = await api.get(`/food/scan/${result}`);
-      setSelectedFood(res.data);
-      setShowScanner(false);
-      setShowSearch(true);
-    } catch (err) {
-      console.error("Ürün bulunamadı:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (showScanner) {
-      const scanner = new Html5QrcodeScanner(
-        "reader",
-        { fps: 10, qrbox: 250 },
-        false,
-      );
-      scanner.render(onScanSuccess, (err) => {
-        // Tarama hataları NotFoundException (sessiz geçilir)
-      });
-      return () => {
-        scanner.clear();
-      };
-    }
-  }, [showScanner]);
-
-  const handleLogMeal = async () => {
-    if (!selectedFood) return;
-    setLoading(true);
-    try {
-      await api.post("/meal/log", {
-        foodId: selectedFood.id,
-        type: mealType,
-        amount: Number(amount),
-      });
-      setShowSearch(false);
-      setSelectedFood(null);
-      fetchLogs();
-    } catch (err) {
-      console.error("Kaydedilemedi:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [fetchLogs]);
 
   const handleDeleteItem = async (id: string) => {
     try {
@@ -174,436 +53,101 @@ export default function DiaryPage() {
     }
   };
 
+  const mealTypes = [
+    { id: "BREAKFAST", label: "KAHVALTI", icon: Clock, color: "text-vora-accent" },
+    { id: "LUNCH", label: "ÖĞLE YEMEĞİ", icon: UtensilsCrossed, color: "text-vora-secondary" },
+    { id: "DINNER", label: "AKŞAM YEMEĞİ", icon: Flame, color: "text-vora-error" },
+    { id: "SNACK", label: "ATIŞTIRMALIK", icon: Zap, color: "text-vora-warning" },
+  ];
+
   return (
-    <div className="max-w-6xl mx-auto space-y-12">
-      {/* Header */}
-      <header className="flex flex-col md:flex-row justify-between items-center gap-6">
-        <div>
-          <h1 className="text-4xl font-extralight tracking-tight mb-2 uppercase">
-            GÜNLÜK{" "}
-            <span className="font-bold text-vora-accent tracking-tighter italic">
-              LOG
-            </span>
-          </h1>
-          <p className="text-vora-tertiary text-sm tracking-widest uppercase opacity-60">
-            Beslenme ve hidrasyon takibi
-          </p>
-        </div>
+    <div className="h-[calc(100vh-100px)] flex flex-col justify-between overflow-hidden">
+      <DashboardHeader 
+        user={user} 
+        auraStreak={dashboard?.auraStreak} 
+        title="GÜNLÜK LOG" 
+        subtitle="BESLENME VE HİDRASYON TAKİBİ" 
+      />
 
-        <div className="flex items-center gap-6 bg-vora-surface border border-vora-border/20 p-2 rounded-2xl shadow-lg">
-          <button className="p-2 hover:bg-white/5 rounded-xl text-vora-tertiary transition-all">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div className="text-center px-4">
-            <p className="text-xs font-bold tracking-widest uppercase">Bugün</p>
-          </div>
-          <button className="p-2 hover:bg-white/5 rounded-xl text-vora-tertiary transition-all">
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Control Center */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-vora-surface border border-vora-accent/20 rounded-[2.5rem] p-8 space-y-8 shadow-2xl">
-            <h2 className="text-xs font-bold text-vora-accent tracking-[0.3em] uppercase">
-              Vora Vision Center
-            </h2>
-            <div className="grid grid-cols-1 gap-4">
-              <button
-                onClick={() => setShowScanner(true)}
-                className="w-full p-6 bg-vora-accent text-vora-on-accent rounded-3xl flex items-center justify-between group overflow-hidden relative shadow-xl shadow-vora-accent/10 hover:brightness-110 transition-all"
-              >
-                <div className="z-10 text-left">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">
-                    Hızlı Tarama
-                  </p>
-                  <p className="text-lg font-bold tracking-tight">
-                    Barkod Okut
-                  </p>
-                </div>
-                <Barcode className="w-12 h-12 opacity-20 group-hover:scale-110 transition-transform z-10" />
-              </button>
-              <button
-                onClick={() => setShowSearch(true)}
-                className="w-full p-6 bg-white/5 border border-vora-border/20 rounded-3xl flex items-center justify-between group hover:border-vora-accent/40 transition-all"
-              >
-                <div className="text-left">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-vora-tertiary mb-1">
-                    Kütüphaneden
-                  </p>
-                  <p className="text-lg font-bold tracking-tight">Yemek Ara</p>
-                </div>
-                <Search className="w-8 h-8 text-vora-accent opacity-40 group-hover:opacity-100 transition-opacity" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Timeline */}
-        <div className="lg:col-span-8 space-y-6">
-          {[
-            { id: "BREAKFAST", l: "Kahvaltı", i: Clock, c: "text-vora-accent" },
-            {
-              id: "LUNCH",
-              l: "Öğle Yemeği",
-              i: UtensilsCrossed,
-              c: "text-vora-secondary",
-            },
-            { id: "DINNER", l: "Akşam Yemeği", i: Flame, c: "text-vora-error" },
-            { id: "SNACK", l: "Atıştırmalık", i: Zap, c: "text-vora-warning" },
-          ].map((m) => {
-            const mealData = dailyMeals.find((dm) => dm.type === m.id);
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 min-h-0 mb-6">
+        {/* Timeline Bento Grid */}
+        <div className="md:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto pr-2 custom-scrollbar">
+          {mealTypes.map((type) => {
+            const mealData = dailyMeals.find((m) => m.type === type.id);
             return (
-              <DiaryCard
-                key={m.id}
-                title={m.l}
-                subtitle={m.id}
-                icon={m.i}
-                colorClass={m.c}
-              >
+              <BentoCard key={type.id} title={type.label} icon={type.icon} colorClass={type.color} className="h-[280px]">
                 {mealData && mealData.items.length > 0 ? (
-                  mealData.items.map((item: any) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-4 bg-white/[0.02] rounded-2xl border border-vora-border/20 group/item transition-colors hover:bg-white/[0.04]"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-vora-accent/5 flex items-center justify-center text-vora-accent font-bold text-xs italic">
-                          {item.food.name.substring(0, 2).toUpperCase()}
-                        </div>
+                  <div className="space-y-3">
+                    {mealData.items.map((item: any) => (
+                      <div key={item.id} className="flex items-center justify-between p-3.5 bg-white/[0.02] border border-vora-border/10 rounded-2xl group/item transition-all hover:bg-vora-accent/[0.03]">
                         <div>
-                          <p className="text-xs font-bold uppercase tracking-tight">
-                            {item.food.name}
-                          </p>
-                          <p className="text-[9px] text-vora-tertiary uppercase">
-                            {item.amount}g •{" "}
-                            {Math.round(
-                              (item.food.calories / 100) * item.amount,
-                            )}{" "}
-                            kcal
+                          <p className="text-[10px] font-bold uppercase tracking-tight text-vora-primary">{item.food.name}</p>
+                          <p className="text-[8px] text-vora-tertiary uppercase tracking-widest mt-0.5">
+                            {item.amount}g • {Math.round((item.food.calories / 100) * item.amount)} KCAL
                           </p>
                         </div>
+                        <button onClick={() => handleDeleteItem(item.id)} className="p-2 opacity-0 group-hover/item:opacity-100 text-vora-error/40 hover:text-vora-error transition-all">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="opacity-0 group-hover/item:opacity-100 p-2 text-vora-error/40 hover:text-vora-error transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 ) : (
-                  <div className="h-20 flex items-center justify-center border-2 border-dashed border-vora-border/20 rounded-2xl opacity-10">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-vora-tertiary">
-                      Henüz Kayıt Yok
-                    </p>
+                  <div className="h-full flex flex-col items-center justify-center opacity-10 space-y-3">
+                    <Plus className="w-8 h-8" />
+                    <p className="text-[8px] font-bold uppercase tracking-[0.3em]">VERİ GİRİŞİ YOK</p>
                   </div>
                 )}
-              </DiaryCard>
+              </BentoCard>
             );
           })}
         </div>
+
+        {/* Vision Center Sidebar Bento */}
+        <div className="md:col-span-4 flex flex-col gap-6">
+          <BentoCard title="VISION CENTER" icon={Barcode} className="flex-1">
+            <div className="flex flex-col gap-3 h-full justify-center">
+              <button onClick={() => setActiveAction("barcode")} className="p-5 bg-vora-accent text-vora-on-accent rounded-[2rem] flex items-center justify-between group transition-all shadow-xl shadow-vora-accent/10 hover:brightness-110">
+                <div className="text-left">
+                  <p className="text-[8px] font-black uppercase tracking-widest opacity-70 mb-1">HIZLI TARAMA</p>
+                  <p className="text-sm font-bold tracking-tight uppercase">BARKOD OKUT</p>
+                </div>
+                <Barcode className="w-8 h-8 opacity-30 group-hover:scale-110 transition-transform" />
+              </button>
+              <button onClick={() => setActiveAction("search")} className="p-5 bg-white/[0.02] border border-vora-border/20 rounded-[2rem] flex items-center justify-between group transition-all hover:bg-vora-accent/5">
+                <div className="text-left">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-vora-tertiary mb-1">KÜTÜPHANEDEN</p>
+                  <p className="text-sm font-bold tracking-tight uppercase text-vora-primary">BESİN ARA</p>
+                </div>
+                <Search className="w-6 h-6 text-vora-accent opacity-40 group-hover:opacity-100 transition-opacity" />
+              </button>
+            </div>
+          </BentoCard>
+
+          <BentoCard title="GÜNLÜK ÖZET" icon={Zap} className="h-48">
+             <div className="flex flex-col justify-center h-full space-y-4">
+                <div className="flex justify-between items-center">
+                   <p className="text-[9px] font-bold text-vora-tertiary uppercase">TOPLAM ALINAN</p>
+                   <p className="text-lg font-black text-vora-primary tracking-tighter">{Math.round(dashboard?.consumed.calories || 0)} KCAL</p>
+                </div>
+                <div className="h-1.5 w-full bg-white/[0.03] rounded-full overflow-hidden">
+                   <div 
+                    className="h-full bg-vora-accent" 
+                    style={{ width: `${Math.min(((dashboard?.consumed.calories || 0) / (dashboard?.targets.calories || 1)) * 100, 100)}%` }} 
+                   />
+                </div>
+             </div>
+          </BentoCard>
+        </div>
       </div>
 
-      {/* SEARCH & LOG MODAL */}
-      <AnimatePresence>
-        {showSearch && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-vora-background/95 flex items-center justify-center p-6"
-          >
-            <div className="w-full max-w-xl bg-vora-surface border border-white/10 rounded-[3rem] p-10 relative shadow-2xl">
-              <button
-                onClick={() => {
-                  setShowSearch(false);
-                  setSelectedFood(null);
-                }}
-                className="absolute top-8 right-8 p-3 text-vora-tertiary hover:text-white transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
+      <QuickActionsManager activeAction={activeAction} onClose={() => setActiveAction(null)} onRefresh={fetchLogs} />
 
-              {!selectedFood ? (
-                <div className="space-y-8">
-                  <h2 className="text-2xl font-light tracking-widest uppercase">
-                    Yemek Ara
-                  </h2>
-                  <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-vora-tertiary" />
-                    <input
-                      type="text"
-                      autoFocus
-                      placeholder="Örn: Haşlanmış Yumurta"
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 focus:border-vora-accent outline-none transition-all"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  <div className="max-h-60 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                    {searchResults.map((f) => (
-                      <button
-                        key={f.id}
-                        onClick={() => setSelectedFood(f)}
-                        className="w-full p-4 bg-white/[0.02] hover:bg-vora-accent/5 rounded-xl border border-vora-border/20 text-left flex justify-between items-center group transition-all"
-                      >
-                        <div>
-                          <p className="text-sm font-bold uppercase tracking-tight">
-                            {f.name}
-                          </p>
-                          <p className="text-[10px] text-vora-tertiary uppercase">
-                            {f.brand || "Vora Kütüphane"}
-                          </p>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-vora-tertiary group-hover:text-vora-accent transition-colors" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-8">
-                  <div className="flex items-center gap-6">
-                    <div className="w-20 h-20 bg-vora-accent/10 rounded-[2rem] flex items-center justify-center text-vora-accent border border-vora-accent/20">
-                      <UtensilsCrossed className="w-8 h-8" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold uppercase tracking-tight text-vora-primary">
-                        {selectedFood.name}
-                      </h2>
-                      <p className="text-xs text-vora-text-secondary uppercase tracking-widest font-medium">
-                        {selectedFood.brand || "Vora Kütüphane"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-8">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-vora-text-secondary uppercase tracking-[0.2em] ml-1">
-                        Miktar (Gram / ml)
-                      </label>
-                      <div className="relative group">
-                        <input
-                          type="text"
-                          placeholder="0"
-                          className="w-full bg-vora-surface-raised border border-vora-border rounded-2xl p-4 text-2xl font-black outline-none focus:border-vora-accent text-vora-primary transition-all shadow-inner"
-                          value={amount}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/[^0-9]/g, "");
-                            setAmount(
-                              val === "" ? "" : parseInt(val, 10).toString(),
-                            );
-                          }}
-                        />
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-vora-text-tertiary uppercase tracking-widest group-focus-within:text-vora-accent transition-colors">
-                          G / ML
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-vora-text-secondary uppercase tracking-[0.2em] ml-1">
-                        Öğün Tipi
-                      </label>
-                      <div className="relative">
-                        <select
-                          className="w-full bg-vora-surface-raised border border-vora-border rounded-2xl p-4 h-[66px] outline-none focus:border-vora-accent uppercase text-[10px] font-bold tracking-widest text-vora-primary appearance-none cursor-pointer transition-all shadow-inner"
-                          value={mealType}
-                          onChange={(e) => setMealType(e.target.value)}
-                        >
-                          <option value="BREAKFAST">Kahvaltı</option>
-                          <option value="LUNCH">Öğle Yemeği</option>
-                          <option value="DINNER">Akşam Yemeği</option>
-                          <option value="SNACK">Atıştırmalık</option>
-                        </select>
-                        <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-vora-text-tertiary rotate-90 pointer-events-none" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Kütüphaneye Ekleme Switch'i — Temalar.md uyumlu */}
-                  <div
-                    className={`flex items-center justify-between p-5 rounded-[2rem] border transition-all duration-300 cursor-pointer ${addToLibrary ? "bg-vora-accent/5 border-vora-accent/30 shadow-[0_0_20px_rgba(var(--color-accent),0.05)]" : "bg-vora-surface-raised border-vora-border/40 hover:border-vora-border"}`}
-                    onClick={() => setAddToLibrary(!addToLibrary)}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 ${addToLibrary ? "bg-vora-accent text-vora-text-on-accent scale-110 shadow-lg shadow-vora-accent/20" : "bg-vora-background text-vora-text-tertiary"}`}
-                      >
-                        <Plus
-                          className={`w-6 h-6 transition-transform duration-500 ${addToLibrary ? "rotate-90" : ""}`}
-                        />
-                      </div>
-                      <div>
-                        <p
-                          className={`text-[11px] font-bold uppercase tracking-widest transition-colors ${addToLibrary ? "text-vora-primary" : "text-vora-text-secondary opacity-60"}`}
-                        >
-                          Kütüphaneme Ekle
-                        </p>
-                        <p className="text-[9px] text-vora-text-tertiary uppercase font-medium">
-                          Bu besini favorilerine dahil et
-                        </p>
-                      </div>
-                    </div>
-                    <div
-                      className={`w-14 h-7 rounded-full p-1 transition-all duration-500 relative ${addToLibrary ? "bg-vora-accent" : "bg-vora-background border border-vora-border"}`}
-                    >
-                      <motion.div
-                        animate={{ x: addToLibrary ? 28 : 0 }}
-                        className="w-5 h-5 bg-white rounded-full shadow-xl z-10 relative"
-                      />
-                      <div
-                        className={`absolute inset-0 rounded-full transition-opacity duration-500 ${addToLibrary ? "opacity-100" : "opacity-0"} bg-gradient-to-r from-vora-accent to-vora-accent-bright animate-pulse`}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-4 p-6 bg-vora-surface-raised rounded-3xl border border-vora-border text-center shadow-inner">
-                    <div className="space-y-1">
-                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">
-                        Kcal
-                      </p>
-                      <p className="font-black text-lg text-vora-primary tracking-tighter">
-                        {Math.round(
-                          (selectedFood.calories / 100) * (Number(amount) || 0),
-                        )}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">
-                        Prot
-                      </p>
-                      <p className="font-black text-lg text-vora-primary tracking-tighter">
-                        {Math.round(
-                          (selectedFood.protein / 100) * (Number(amount) || 0),
-                        )}
-                        g
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">
-                        Karb
-                      </p>
-                      <p className="font-black text-lg text-vora-primary tracking-tighter">
-                        {Math.round(
-                          (selectedFood.carbs / 100) * (Number(amount) || 0),
-                        )}
-                        g
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[8px] text-vora-text-secondary uppercase tracking-[0.2em] font-bold">
-                        Yağ
-                      </p>
-                      <p className="font-black text-lg text-vora-primary tracking-tighter">
-                        {Math.round(
-                          (selectedFood.fat / 100) * (Number(amount) || 0),
-                        )}
-                        g
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      onClick={() => setSelectedFood(null)}
-                      className="flex-1 py-5 text-[10px] font-bold uppercase tracking-[0.3em] text-vora-text-tertiary hover:text-vora-primary transition-all active:scale-95"
-                    >
-                      İptal
-                    </button>
-                    <button
-                      onClick={handleLogMeal}
-                      disabled={loading || !amount || Number(amount) <= 0}
-                      className="flex-[2.5] bg-vora-accent text-vora-text-on-accent py-5 rounded-[1.5rem] font-bold text-[11px] uppercase tracking-[0.3em] shadow-2xl shadow-vora-accent/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-20 disabled:grayscale transition-all"
-                    >
-                      Sisteme İşle
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Scanner Overlay (Vora Vision) */}
-      <AnimatePresence>
-        {showScanner && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-vora-background/98 flex items-center justify-center p-6 backdrop-blur-sm"
-          >
-            <div className="w-full max-w-xl bg-vora-surface border border-vora-border/20 rounded-[3rem] p-12 relative shadow-2xl text-center overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-vora-accent/20 animate-pulse" />
-              <button
-                onClick={() => setShowScanner(false)}
-                className="absolute top-8 right-8 text-vora-tertiary hover:text-vora-accent transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-
-              <div className="mb-10 inline-block p-8 rounded-[2.5rem] bg-vora-accent/[0.03] border border-vora-accent/20 relative group">
-                <Barcode className="w-16 h-16 text-vora-accent shadow-[0_0_30px_rgba(var(--color-accent),0.4)]" />
-                <div className="absolute inset-0 border-2 border-vora-accent/20 rounded-[2.5rem] animate-ping opacity-20" />
-              </div>
-
-              <h2 className="text-3xl font-light tracking-[0.3em] uppercase mb-4 text-vora-primary">
-                Vora <span className="font-bold text-vora-accent">Vision</span>
-              </h2>
-              <p className="text-[10px] text-vora-tertiary uppercase tracking-widest mb-12 font-bold opacity-60">
-                Ürün barkodunu tarayarak saniyeler içinde kaydet.
-              </p>
-
-              <div className="grid grid-cols-1 gap-4 max-w-xs mx-auto">
-                <div id="reader" className="hidden" />{" "}
-                {/* Arka planda çalışacak motor */}
-                <button
-                  onClick={() => {
-                    const scanner = new Html5QrcodeScanner(
-                      "reader",
-                      { fps: 10, qrbox: 250 },
-                      false,
-                    );
-                    document
-                      .getElementById("reader")
-                      ?.classList.remove("hidden");
-                    scanner.render(onScanSuccess, (err) => {});
-                  }}
-                  className="w-full py-6 bg-vora-accent text-vora-on-accent rounded-[2rem] font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-3 shadow-2xl shadow-vora-accent/20 hover:brightness-110 active:scale-95 transition-all"
-                >
-                  <Camera className="w-5 h-5" /> Kamerayı Başlat
-                </button>
-                <div className="flex items-center gap-4 py-2">
-                  <div className="h-[1px] flex-1 bg-vora-border/20" />
-                  <span className="text-[8px] font-bold text-vora-tertiary uppercase">
-                    veya
-                  </span>
-                  <div className="h-[1px] flex-1 bg-vora-border/20" />
-                </div>
-                <div className="flex gap-2 bg-white/5 p-2 rounded-2xl border border-vora-border/20">
-                  <input
-                    type="text"
-                    placeholder="Barkod No Gir"
-                    className="flex-1 bg-transparent text-[10px] font-bold px-4 outline-none uppercase tracking-widest text-white"
-                    onKeyDown={(e: any) => {
-                      if (e.key === "Enter") onScanSuccess(e.target.value);
-                    }}
-                  />
-                  <div className="p-2 bg-vora-accent/10 text-vora-accent rounded-xl">
-                    <ChevronRight className="w-4 h-4" />
-                  </div>
-                </div>
-                <button className="w-full py-5 bg-white/[0.02] border border-white/10 rounded-[2rem] font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-white/[0.05] transition-all mt-2">
-                  <Upload className="w-4 h-4" /> Barkod Fotoğrafı Yükle
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <footer className="mt-4 text-center opacity-20 pb-2">
+        <p className="text-[8px] font-medium tracking-[0.2em] uppercase max-w-2xl mx-auto leading-relaxed text-vora-tertiary italic">
+          Vora AI // Data-Driven Nutrition Logs
+        </p>
+      </footer>
     </div>
   );
 }

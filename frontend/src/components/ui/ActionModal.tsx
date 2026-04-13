@@ -28,52 +28,64 @@ export function ActionModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
+  const displayTitle = typeof title === 'string' ? title : '';
+  const words = displayTitle.split(' ');
+  const firstWord = words.length > 1 ? words[0] : '';
+  const restOfTitle = words.length > 1 ? words.slice(1).join(' ') : displayTitle;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
-      className="fixed inset-0 z-[100] bg-vora-background/95 flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-[100] bg-vora-background/95 flex items-center justify-center p-4 backdrop-blur-sm cursor-pointer"
     >
       <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
+        initial={{ scale: 0.95, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[500px] h-[600px] max-h-[95vh] bg-vora-surface border border-vora-border/20 rounded-[2.5rem] p-6 sm:p-8 relative shadow-2xl flex flex-col my-auto"
+        className="w-full max-w-xl h-[650px] bg-vora-surface border border-vora-border/20 rounded-[3rem] relative shadow-2xl overflow-hidden flex flex-col cursor-default"
       >
-        <button
-          onClick={onClose}
-          className="absolute top-6 right-6 text-vora-tertiary hover:text-vora-primary transition-colors z-50 p-2 bg-white/5 rounded-full hover:bg-white/10"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <div className="flex flex-col items-center justify-center text-center mb-6 shrink-0 mt-2">
-          {Icon && (
-            <div className="w-14 h-14 bg-vora-accent/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-vora-accent/20">
-              <Icon className="w-7 h-7 text-vora-accent drop-shadow-[0_0_10px_rgba(var(--color-accent),0.5)]" />
+        {/* Sabit Header */}
+        <div className="p-8 pb-4 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-5">
+            {Icon && (
+              <div className="p-3.5 bg-vora-accent/10 text-vora-accent rounded-2xl border border-vora-accent/10">
+                <Icon className="w-6 h-6" />
+              </div>
+            )}
+            <div>
+              <h2 className="text-2xl font-light tracking-[0.2em] uppercase text-vora-primary leading-none">
+                {firstWord} <span className="font-bold text-vora-accent">{restOfTitle}</span>
+              </h2>
+              {subtitle && (
+                <p className="text-[10px] font-bold text-vora-tertiary uppercase tracking-[0.3em] mt-2 opacity-60 italic">
+                  {subtitle}
+                </p>
+              )}
             </div>
-          )}
-          <h2 className="text-2xl font-light tracking-[0.3em] uppercase mb-1.5 text-vora-primary">
-            {title}
-          </h2>
-          {subtitle ? (
-            <p className="text-[9px] font-bold text-vora-tertiary tracking-widest uppercase">
-              {subtitle}
-            </p>
-          ) : (
-            <div className="h-1 w-10 bg-vora-accent mx-auto rounded-full mt-1" />
-          )}
+          </div>
+          <button
+            onClick={onClose}
+            className="p-3 hover:bg-white/5 rounded-full text-vora-tertiary hover:text-vora-primary transition-all"
+          >
+            <X className="w-6 h-6" />
+          </button>
         </div>
 
-        <div className="flex-1 w-full overflow-y-auto custom-scrollbar flex flex-col justify-start">
+        {/* Dinamik İçerik Alanı */}
+        <div className="flex-1 overflow-y-auto px-8 pb-8 custom-scrollbar">
           {children}
         </div>
 
-        <p className="mt-6 shrink-0 text-center text-[8px] text-vora-tertiary uppercase tracking-[0.3em] font-bold opacity-30 italic">
-          Sustainable Health Architecture
-        </p>
+        {/* Sabit Footer Branding */}
+        <div className="p-6 pt-0 text-center shrink-0">
+          <p className="text-[8px] text-vora-tertiary uppercase tracking-[0.4em] font-bold opacity-20 italic">
+            Vora Sustainable Health Architecture
+          </p>
+        </div>
       </motion.div>
     </motion.div>
   );

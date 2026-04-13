@@ -1,23 +1,81 @@
 # VORA — Color System & Token Reference
 
-Uygulama 3 tema destekler. Her tema onboarding'de kullanıcı hedefine göre otomatik atanır,
-ayarlardan manuel değiştirilebilir.
+Uygulama 4 tema destekler. Varsayılan tema kayıt olmamış kullanıcılar için Ember & Moss'tur.
+Onboarding tamamlandıktan sonra kullanıcı hedefine göre tema otomatik atanır, ayarlardan manuel değiştirilebilir.
 
 ---
 
 ## Tema Atama Mantığı
 
-| Kullanıcı Hedefi      | Tema                             |
-| --------------------- | -------------------------------- |
-| Kas yapmak / Fitness  | ⚡ Neural Dark (Charcoal × Teal) |
-| Bulk / Güç antrenmanı | 🔥 Forge Mode (Obsidian × Amber) |
-| Kilo vermek / Diyet   | 🔮 Aura Light (Violet × Cream)   |
+| Durum                   | Tema                                  |
+| ----------------------- | ------------------------------------- |
+| Kayıt olmamış kullanıcı | 🌿 Ember & Moss (Cream × Forest)      |
+| Kas yapmak / Fitness    | ⚡ Neural Dark (Charcoal × Teal)      |
+| Bulk / Güç antrenmanı   | 🔥 Forge Mode (Obsidian × Amber)      |
+| Kilo vermek / Diyet     | 🔮 Aura Light (Arctic White × Violet) |
+
+---
+
+## 🌿 Tema 0 — Ember & Moss (Varsayılan)
+
+**Kullanım alanı:** Kayıt olmamış kullanıcı, onboarding, ilk karşılama ekranı
+
+> **Light tema.** Diğer 3 tema dark'tır. Onboarding bitince
+> kullanıcının seçtiği hedefe göre dark temalardan birine geçiş yapılır.
+> Input alanları saf beyaz (#FFFFFF) bırakılmıştır — krem zemin
+> üzerinde hafifçe ayrışarak net bir yazma alanı hissi verir.
+
+### Renk Tokenleri
+
+| Token                    | Hex         | Kullanım                                                  |
+| ------------------------ | ----------- | --------------------------------------------------------- |
+| `--color-background`     | `#F0E6D3`   | Ana ekran arka planı, scaffold — sıcak krem               |
+| `--color-surface`        | `#EAD9C0`   | Kartlar, bottom sheet, modal arka planı                   |
+| `--color-surface-raised` | `#E0D4BE`   | Chip, secondary card, tab bar arka planı                  |
+| `--color-input`          | `#FFFFFF`   | Input alanı arka planı — kremden ayrışması için saf beyaz |
+| `--color-accent`         | `#D4A853`   | Primary buton, aktif tab, progress bar, link — ember gold |
+| `--color-accent-bright`  | `#E8C070`   | Hover state, streak sayacı, başarı animasyonu — firefly   |
+| `--color-accent-muted`   | `#FDF3E0`   | Badge arka planı, selected row — glow tint                |
+| `--color-text-primary`   | `#1C2416`   | Başlıklar, ana içerik metni — koyu orman yeşili           |
+| `--color-text-secondary` | `#2A3420`   | Alt başlıklar, açıklama metni                             |
+| `--color-text-tertiary`  | `#6B7D5A`   | Placeholder, hint, timestamp, devre dışı metin            |
+| `--color-text-on-accent` | `#2A1F0E`   | Aksan renkli buton üzerindeki metin — koyu kahve          |
+| `--color-border`         | `#C8BBA8`   | Kart çerçevesi, input border                              |
+| `--color-border-subtle`  | `#E0D4BE`   | Section ayırıcı, subtle divider                           |
+| `--color-success`        | `#3D7A3D`   | Başarı mesajı, hedef tamamlandı                           |
+| `--color-error`          | `#C0392B`   | Hata mesajı, kalori aşımı uyarısı                         |
+| `--color-warning`        | `#D4A853`   | Uyarı bildirimi (aksan ile aynı bu temada)                |
+| `--color-overlay`        | `#1C241699` | Modal/sheet arka plan overlay (%60 opacity)               |
+
+### Kullanım Örnekleri
+
+```
+AppBar arka planı       → --color-background
+Kalori kartı            → --color-surface + --color-border
+"Başla" butonu          → --color-accent (bg) + --color-text-on-accent (text)
+Progress ring dolgusu   → --color-accent
+Input field             → --color-input (bg) + --color-border (border)
+Aktif tab               → --color-text-primary (bg koyu yeşil) + #F0E6D3 (text)
+Pasif tab               → --color-text-tertiary
+Sidebar / nav           → --color-text-secondary (bg: #2A3420)
+Streak rozeti           → --color-accent-muted (bg) + --color-accent (text+icon)
+Şifremi unuttum linki   → --color-accent
+```
+
+### ⚠️ Bu Temada Dikkat Edilmesi Gerekenler
+
+```
+❌ Koyu metin renkleri (#1C2416, #2A3420) arka plan olarak kullanılmamalı — sadece metin
+✅ Sidebar ve nav item aktif bg için #2A3420 kullanılabilir (30% yüzey)
+✅ Input her zaman #FFFFFF — krem zemin üzerinde kontrast sağlar
+✅ Aksan buton üzeri metin #2A1F0E — amber üzerinde okunabilirlik için
+```
 
 ---
 
 ## ⚡ Tema 1 — Neural Dark (Charcoal × Electric Teal)
 
-**Kullanım alanı:** Fitness, bodybuild, cinsiyet-nötr, varsayılan tema
+**Kullanım alanı:** Fitness, bodybuild, cinsiyet-nötr
 
 ### Renk Tokenleri
 
@@ -152,7 +210,7 @@ Defisit rozeti          → --color-accent-muted (bg) + --color-accent (text)
 
 ---
 
-## Ortak Sistem Tokenleri (3 temada da aynı anlam)
+## Ortak Sistem Tokenleri (4 temada da aynı anlam)
 
 | Token                    | Açıklama                             |
 | ------------------------ | ------------------------------------ |
@@ -175,10 +233,29 @@ Defisit rozeti          → --color-accent-muted (bg) + --color-accent (text)
 
 ---
 
-## Flutter Entegrasyonu (Örnek)
+## Flutter Entegrasyonu
 
 ```dart
 // lib/core/theme/app_colors.dart
+
+class EmberMossColors {
+  static const background    = Color(0xFFF0E6D3);
+  static const surface       = Color(0xFFEAD9C0);
+  static const surfaceRaised = Color(0xFFE0D4BE);
+  static const input         = Color(0xFFFFFFFF);
+  static const accent        = Color(0xFFD4A853);
+  static const accentBright  = Color(0xFFE8C070);
+  static const accentMuted   = Color(0xFFFDF3E0);
+  static const textPrimary   = Color(0xFF1C2416);
+  static const textSecondary = Color(0xFF2A3420);
+  static const textTertiary  = Color(0xFF6B7D5A);
+  static const textOnAccent  = Color(0xFF2A1F0E);
+  static const border        = Color(0xFFC8BBA8);
+  static const borderSubtle  = Color(0xFFE0D4BE);
+  static const success       = Color(0xFF3D7A3D);
+  static const error         = Color(0xFFC0392B);
+  static const warning       = Color(0xFFD4A853);
+}
 
 class NeuralDarkColors {
   static const background    = Color(0xFF1A1F2E);
@@ -238,9 +315,29 @@ class AuraLightColors {
 
 ---
 
-## CSS / React Native Entegrasyonu (Örnek)
+## CSS / React Native Entegrasyonu
 
 ```css
+/* Ember & Moss — Varsayılan (light) */
+[data-theme="ember-moss"] {
+  --color-background: #f0e6d3;
+  --color-surface: #ead9c0;
+  --color-surface-raised: #e0d4be;
+  --color-input: #ffffff;
+  --color-accent: #d4a853;
+  --color-accent-bright: #e8c070;
+  --color-accent-muted: #fdf3e0;
+  --color-text-primary: #1c2416;
+  --color-text-secondary: #2a3420;
+  --color-text-tertiary: #6b7d5a;
+  --color-text-on-accent: #2a1f0e;
+  --color-border: #c8bba8;
+  --color-border-subtle: #e0d4be;
+  --color-success: #3d7a3d;
+  --color-error: #c0392b;
+  --color-warning: #d4a853;
+}
+
 /* Neural Dark */
 [data-theme="neural-dark"] {
   --color-background: #1a1f2e;
@@ -248,14 +345,16 @@ class AuraLightColors {
   --color-surface-raised: #353c55;
   --color-accent: #00c9a7;
   --color-accent-bright: #00e5bf;
+  --color-accent-muted: #00c9a720;
   --color-text-primary: #e0eaf5;
   --color-text-secondary: #8ba4c0;
   --color-text-tertiary: #5a7a9a;
   --color-text-on-accent: #003329;
   --color-border: #3a4560;
+  --color-border-subtle: #2c3347;
+  --color-success: #00c9a7;
   --color-error: #ff5a5a;
   --color-warning: #ffb830;
-  --color-success: #00c9a7;
 }
 
 /* Forge Mode */
@@ -265,14 +364,16 @@ class AuraLightColors {
   --color-surface-raised: #3f3f46;
   --color-accent: #f59e0b;
   --color-accent-bright: #fcd34d;
+  --color-accent-muted: #f59e0b18;
   --color-text-primary: #f4f4f5;
   --color-text-secondary: #a1a1aa;
   --color-text-tertiary: #71717a;
   --color-text-on-accent: #431a00;
   --color-border: #52525b;
+  --color-border-subtle: #3f3f46;
+  --color-success: #22c55e;
   --color-error: #ef4444;
   --color-warning: #f59e0b;
-  --color-success: #22c55e;
 }
 
 /* Aura Light */
@@ -282,17 +383,20 @@ class AuraLightColors {
   --color-surface-raised: #ede9fe;
   --color-accent: #5b21b6;
   --color-accent-light: #7c3aed;
+  --color-accent-muted: #5b21b615;
   --color-text-primary: #1e1145;
   --color-text-secondary: #4c3d7a;
   --color-text-tertiary: #7c6ea8;
   --color-text-on-accent: #ffffff;
   --color-border: #c4b8f0;
+  --color-border-subtle: #e5e0fa;
+  --color-success: #059669;
   --color-error: #b91c1c;
   --color-warning: #b45309;
-  --color-success: #059669;
 }
 ```
 
 ---
 
-_VORA Color System v1.0 — 3 tema, 16 token, WCAG AA uyumlu_
+_VORA Color System v2.0 — 4 tema, 16 token, WCAG AA uyumlu_
+_v2.0 — Ember & Moss varsayılan tema olarak eklendi (light, krem zemin)_

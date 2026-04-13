@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Query, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Body, UseGuards, Request } from '@nestjs/common';
 import { FoodService } from './food.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -8,19 +8,19 @@ export class FoodController {
 
   @UseGuards(JwtAuthGuard)
   @Get('scan/:barcode')
-  scanBarcode(@Param('barcode') barcode: string) {
-    return this.foodService.scanBarcode(barcode);
+  scanBarcode(@Param('barcode') barcode: string, @Request() req) {
+    return this.foodService.scanBarcode(barcode, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('search')
-  search(@Query('q') query: string) {
-    return this.foodService.search(query);
+  search(@Query('q') query: string, @Request() req) {
+    return this.foodService.search(query, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('manual')
-  createManual(@Body() data: any) {
-    return this.foodService.createManual(data);
+  createManual(@Body() data: any, @Request() req) {
+    return this.foodService.createManual(data, req.user.id);
   }
 }

@@ -8,9 +8,10 @@ datasource db {
 }
 
 enum Persona {
-  OBSIDIAN // Hardcore: Koyu zemin + Amber/Altın (Bodybuilding/Disiplin)
-  CHARCOAL // Tech: Gece mavisi + Teal (Bilimsel veri ve analiz)
-  ARCTIC   // Wellness: Beyaz/Lila + Mor (Sağlıklı yaşam ve huzur)
+  EMBER_MOSS   // Default: Cream × Forest (First impression)
+  NEURAL_DARK  // Tech: Gece mavisi + Teal (Bilimsel veri ve analiz)
+  FORGE_MODE   // Hardcore: Koyu zemin + Amber/Altın (Bodybuilding/Disiplin)
+  AURA_LIGHT   // Wellness: Beyaz/Lila + Mor (Sağlıklı yaşam ve huzur)
 }
 
 enum Gender {
@@ -49,9 +50,12 @@ model User {
   profile   Profile?
   
   // İlişkiler
-  meals     Meal[]
-  waterLogs WaterLog[]
-  foods     Food[]     // Kullanıcının kendi eklediği özel yiyecekler
+  meals         Meal[]
+  waterLogs     WaterLog[]
+  foods         Food[]          // Kullanıcının kendi eklediği özel yiyecekler
+  templates     MealTemplate[]  // Kayıtlı öğün şablonları
+  inventory     Inventory[]     // Dijital Kiler
+  streak        Streak?         // Vora Flow Serisi
 
   refreshToken String?
 
@@ -68,7 +72,7 @@ model Profile {
   weight           Float
   targetWeight     Float
   activityLevel    ActivityLevel
-  selectedPersona  Persona       @default(CHARCOAL)
+  selectedPersona  Persona       @default(EMBER_MOSS)
   goal             Goal
 
   userId           String        @unique
@@ -80,6 +84,12 @@ model Profile {
   @@map("profiles")
 }
 
+enum FoodStatus {
+  VERIFIED    // Vora ekibi tarafından onaylanmış kesin veri
+  COMMUNITY   // Kullanıcılar tarafından barkodla eklenmiş genel veri
+  PRIVATE     // Sadece ekleyen kullanıcıya özel veri
+}
+
 model Food {
   id          String   @id @default(cuid())
   name        String
@@ -87,15 +97,19 @@ model Food {
   protein     Float
   carbs       Float
   fat         Float
+  defaultAmount Float  @default(100) // Porsiyon desteği (örn: 75g, 420g)
   barcode     String?  @unique
   brand       String?
   image       String?
   
-  isGlobal    Boolean  @default(false) // Herkes görebilir mi?
+  status      FoodStatus @default(COMMUNITY)
+  isGlobal    Boolean    @default(false) // Deprecated: Status kullanılacak
   creatorId   String?
-  creator     User?    @relation(fields: [creatorId], references: [id])
+  creator     User?      @relation(fields: [creatorId], references: [id])
 
-  mealItems   MealItem[]
+  mealItems     MealItem[]
+  templateItems TemplateItem[]
+  inventory     Inventory[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -139,6 +153,53 @@ model MealItem {
   @@map("meal_items")
   @@index([mealId])
   @@index([foodId])
+}
+
+model MealTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     TemplateItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("meal_templates")
+}
+
+model TemplateItem {
+  id             String       @id @default(cuid())
+  amount         Float
+  mealTemplateId String
+  mealTemplate   MealTemplate @relation(fields: [mealTemplateId], references: [id], onDelete: Cascade)
+  foodId         String
+  food           Food         @relation(fields: [foodId], references: [id])
+
+  @@map("template_items")
+}
+
+model Inventory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodId    String
+  food      Food     @relation(fields: [foodId], references: [id])
+  quantity  Float    // Mevcut stok (g veya ml)
+  minLimit  Float?   // Kritik stok uyarısı için
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("inventory")
+}
+
+model Streak {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  count       Int      @default(0)
+  lastLogDate DateTime @default(now())
+
+  @@map("streaks")
 }
 
 model WaterLog {

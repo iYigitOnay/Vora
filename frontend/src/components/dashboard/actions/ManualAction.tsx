@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, ChevronRight, ChevronLeft, UtensilsCrossed, Scale, Flame, Target } from "lucide-react";
+import { ChevronRight, ChevronLeft, Flame, Target, Droplets, Scale, Utensils } from "lucide-react";
 import api from "@/lib/api";
-import { MealType } from "@prisma/client";
 
 interface ManualActionProps {
   onSuccess: () => void;
@@ -15,34 +14,39 @@ export function ManualAction({ onSuccess }: ManualActionProps) {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
-    amount: 100,
-    unit: "g",
-    calories: "",
-    protein: "",
-    carbs: "",
-    fat: "",
-    type: "BREAKFAST" as MealType,
+    brand: "",
+    calories: "0",
+    protein: "0",
+    carbs: "0",
+    fat: "0",
+    amount: "100",
+    type: "BREAKFAST",
   });
 
-  const nextStep = () => setStep(step + 1);
-  const prevStep = () => setStep(step - 1);
+  const handleNumericInput = (field: string, val: string, maxChars: number = 5) => {
+    const cleaned = val.replace(/[^0-9]/g, "").slice(0, maxChars);
+    setForm({ ...form, [field]: cleaned || "0" });
+  };
 
-  const handleSubmit = async () => {
+  const handleFinalSubmit = async () => {
     setLoading(true);
     try {
+      // 1. Önce özel besini oluştur
       const foodRes = await api.post("/food/manual", {
         name: form.name,
+        brand: form.brand,
         calories: Number(form.calories),
         protein: Number(form.protein),
         carbs: Number(form.carbs),
         fat: Number(form.fat),
+        defaultAmount: 100,
       });
 
+      // 2. Sonra bu besini öğüne ekle
       await api.post("/meal/log", {
         foodId: foodRes.data.id,
         type: form.type,
         amount: Number(form.amount),
-        customName: form.name, // Senior dokunuşu: customName desteği
       });
 
       onSuccess();
@@ -53,172 +57,101 @@ export function ManualAction({ onSuccess }: ManualActionProps) {
     }
   };
 
-  const stepVariants = {
-    enter: (direction: number) => ({ x: direction > 0 ? 100 : -100, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (direction: number) => ({ x: direction < 0 ? 100 : -100, opacity: 0 }),
-  };
-
   return (
-    <div className="flex flex-col h-full overflow-hidden relative">
-      {/* Progress Bar */}
-      <div className="flex gap-1 mb-6 px-1 shrink-0">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-500 ${step >= i ? "bg-vora-accent" : "bg-white/5"}`} />
-        ))}
-      </div>
-
-      <div className="flex-1 relative">
-        <AnimatePresence mode="wait" custom={step}>
-          {step === 1 && (
-            <motion.div
-              key="step1"
-              variants={stepVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              className="space-y-6"
-            >
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[8px] font-bold text-vora-tertiary uppercase tracking-[0.3em] px-1">Besin İsmi</label>
-                  <div className="p-4 bg-vora-surface-raised border border-vora-border/10 rounded-[1.5rem] focus-within:border-vora-accent/30 transition-all">
-                    <input
-                      type="text"
-                      autoFocus
-                      placeholder="ÖRN: IZGARA TAVUK"
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value.toUpperCase() })}
-                      className="w-full bg-transparent outline-none text-sm font-bold tracking-widest text-vora-primary placeholder:opacity-20 uppercase"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[8px] font-bold text-vora-tertiary uppercase tracking-[0.3em] px-1">Miktar ({form.unit})</label>
-                  <div className="flex gap-2">
-                    <div className="flex-1 p-4 bg-vora-surface-raised border border-vora-border/10 rounded-[1.5rem] focus-within:border-vora-accent/30 transition-all">
-                      <input
-                        type="number"
-                        placeholder="100"
-                        value={form.amount}
-                        onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
-                        className="w-full bg-transparent outline-none text-sm font-bold tracking-widest text-vora-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      />
-                    </div>
-                    <div className="flex gap-1 bg-white/5 p-1 rounded-[1.5rem] border border-white/5">
-                      {["g", "ml"].map((u) => (
-                        <button
-                          key={u}
-                          onClick={() => setForm({ ...form, unit: u })}
-                          className={`px-4 rounded-xl text-[10px] font-bold uppercase transition-all ${form.unit === u ? "bg-vora-accent text-white" : "text-vora-tertiary hover:bg-white/5"}`}
-                        >
-                          {u}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+    <div className="flex flex-col h-full relative space-y-6 pt-2">
+      <AnimatePresence mode="wait">
+        {step === 1 ? (
+          <motion.div key="s1" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-8">
+            <div className="text-center space-y-2">
+              <h2 className="text-xl font-light tracking-[0.3em] uppercase text-vora-primary">KİMLİK</h2>
+              <p className="text-[9px] font-bold text-vora-tertiary uppercase tracking-widest opacity-40">Besin Adı ve Marka Belirleyin</p>
+            </div>
+            <div className="space-y-6">
+              <div className="relative group">
+                <label className="text-[9px] font-bold text-vora-tertiary uppercase tracking-[0.4em] absolute -top-2 left-0 opacity-50">Besin Adı</label>
+                <input type="text" value={form.name} onChange={(e) => setForm({...form, name: e.target.value.toUpperCase()})} placeholder="ÖRN: ÖZEL KARIŞIM..." className="w-full bg-transparent border-b border-vora-border/20 py-4 outline-none text-xl font-black tracking-tighter text-vora-primary focus:border-vora-accent transition-all uppercase" />
+              </div>
+              <div className="relative group">
+                <label className="text-[9px] font-bold text-vora-tertiary uppercase tracking-[0.4em] absolute -top-2 left-0 opacity-50">Marka (Opsiyonel)</label>
+                <input type="text" value={form.brand} onChange={(e) => setForm({...form, brand: e.target.value.toUpperCase()})} placeholder="ÖRN: EV YAPIMI..." className="w-full bg-transparent border-b border-vora-border/20 py-4 outline-none text-sm font-bold tracking-widest text-vora-primary focus:border-vora-accent transition-all uppercase" />
+              </div>
+            </div>
+          </motion.div>
+        ) : step === 2 ? (
+          <motion.div key="s2" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-8">
+            <div className="text-center space-y-2">
+              <h2 className="text-xl font-light tracking-[0.3em] uppercase text-vora-primary">MAKRO DEĞERLER</h2>
+              <p className="text-[9px] font-bold text-vora-tertiary uppercase tracking-widest opacity-40">100g İçin Besin Değerlerini Girin</p>
+            </div>
+            <div className="grid grid-cols-2 gap-x-10 gap-y-8">
+              <div className="relative group">
+                <label className="text-[8px] font-bold text-vora-tertiary uppercase tracking-[0.3em] mb-1 block">KALORİ (KCAL)</label>
+                <div className="flex items-center gap-3 border-b border-vora-border/20 group-focus-within:border-vora-accent transition-all">
+                  <Flame className="w-4 h-4 text-vora-tertiary opacity-30" />
+                  <input type="text" inputMode="numeric" value={form.calories === "0" ? "" : form.calories} onChange={(e) => handleNumericInput('calories', e.target.value, 4)} placeholder="0" className="w-full bg-transparent py-3 outline-none text-xl font-black tracking-tighter text-vora-primary" />
                 </div>
               </div>
-            </motion.div>
-          )}
-
-          {step === 2 && (
-            <motion.div
-              key="step2"
-              variants={stepVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              className="space-y-6"
-            >
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: "KALORİ", key: "calories", icon: Flame, color: "text-vora-accent" },
-                  { label: "PROTEİN", key: "protein", icon: Target, color: "text-vora-secondary" },
-                  { label: "KARBONHİDRAT", key: "carbs", icon: Scale, color: "text-vora-warning" },
-                  { label: "YAĞ", key: "fat", icon: Droplets, color: "text-vora-error" },
-                ].map((item) => (
-                  <div key={item.key} className="p-4 bg-white/[0.03] border border-vora-border/10 rounded-[2rem] space-y-3 focus-within:border-vora-accent/30 transition-all">
-                    <div className="flex items-center gap-2">
-                      <item.icon className={`w-3 h-3 ${item.color}`} />
-                      <span className="text-[7px] font-bold text-vora-tertiary uppercase tracking-widest">{item.label}</span>
-                    </div>
-                    <input
-                      type="number"
-                      placeholder="0"
-                      value={form[item.key as keyof typeof form]}
-                      onChange={(e) => setForm({ ...form, [item.key]: e.target.value })}
-                      className="w-full bg-transparent outline-none text-xl font-black tracking-tighter text-vora-primary placeholder:opacity-10"
-                    />
-                  </div>
-                ))}
+              <div className="relative group">
+                <label className="text-[8px] font-bold text-vora-tertiary uppercase tracking-[0.3em] mb-1 block">PROTEİN (G)</label>
+                <div className="flex items-center gap-3 border-b border-vora-border/20 group-focus-within:border-vora-accent transition-all">
+                  <Target className="w-4 h-4 text-vora-accent opacity-30" />
+                  <input type="text" inputMode="numeric" value={form.protein === "0" ? "" : form.protein} onChange={(e) => handleNumericInput('protein', e.target.value, 3)} placeholder="0" className="w-full bg-transparent py-3 outline-none text-xl font-black tracking-tighter text-vora-primary" />
+                </div>
               </div>
-              <p className="text-[7px] text-center text-vora-tertiary uppercase tracking-widest opacity-50 italic">
-                Değerler 100{form.unit} üzerinden hesaplanacaktır
-              </p>
-            </motion.div>
-          )}
-
-          {step === 3 && (
-            <motion.div
-              key="step3"
-              variants={stepVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              className="space-y-6"
-            >
-              <div className="grid grid-cols-1 gap-3">
-                {[
-                  { label: "Kahvaltı", val: "BREAKFAST" },
-                  { label: "Öğle Yemeği", val: "LUNCH" },
-                  { label: "Akşam Yemeği", val: "DINNER" },
-                  { label: "Atıştırmalık", val: "SNACK" },
-                ].map((m) => (
-                  <button
-                    key={m.val}
-                    onClick={() => setForm({ ...form, type: m.val as MealType })}
-                    className={`w-full p-5 rounded-[2rem] border transition-all flex items-center justify-between group ${form.type === m.val ? "bg-vora-accent/10 border-vora-accent/40" : "bg-white/[0.02] border-white/5 hover:bg-white/[0.05]"}`}
-                  >
-                    <span className={`text-[10px] font-bold uppercase tracking-widest ${form.type === m.val ? "text-vora-accent" : "text-vora-primary"}`}>{m.label}</span>
-                    <div className={`w-4 h-4 rounded-full border-2 transition-all ${form.type === m.val ? "border-vora-accent bg-vora-accent scale-110 shadow-[0_0_10px_rgba(var(--color-accent),0.4)]" : "border-vora-tertiary/30"}`} />
+              <div className="relative group">
+                <label className="text-[8px] font-bold text-vora-tertiary uppercase tracking-[0.3em] mb-1 block">KARBONHİDRAT (G)</label>
+                <div className="flex items-center gap-3 border-b border-vora-border/20 group-focus-within:border-vora-accent transition-all">
+                  <Droplets className="w-4 h-4 text-vora-tertiary opacity-30" />
+                  <input type="text" inputMode="numeric" value={form.carbs === "0" ? "" : form.carbs} onChange={(e) => handleNumericInput('carbs', e.target.value, 3)} placeholder="0" className="w-full bg-transparent py-3 outline-none text-xl font-black tracking-tighter text-vora-primary" />
+                </div>
+              </div>
+              <div className="relative group">
+                <label className="text-[8px] font-bold text-vora-tertiary uppercase tracking-[0.3em] mb-1 block">YAĞ (G)</label>
+                <div className="flex items-center gap-3 border-b border-vora-border/20 group-focus-within:border-vora-accent transition-all">
+                  <Scale className="w-4 h-4 text-vora-tertiary opacity-30" />
+                  <input type="text" inputMode="numeric" value={form.fat === "0" ? "" : form.fat} onChange={(e) => handleNumericInput('fat', e.target.value, 3)} placeholder="0" className="w-full bg-transparent py-3 outline-none text-xl font-black tracking-tighter text-vora-primary" />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div key="s3" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-8 text-center">
+            <div className="text-center space-y-2">
+              <h2 className="text-xl font-light tracking-[0.3em] uppercase text-vora-primary">SON ADIM</h2>
+              <p className="text-[9px] font-bold text-vora-tertiary uppercase tracking-widest opacity-40">Miktar ve Öğün Tipi Seçin</p>
+            </div>
+            <div className="space-y-8">
+              <div className="relative group max-w-[200px] mx-auto">
+                <label className="text-[9px] font-bold text-vora-tertiary uppercase tracking-[0.4em] mb-2 block opacity-50">Tüketilen Miktar</label>
+                <div className="flex items-end gap-3 border-b border-vora-border/20 group-focus-within:border-vora-accent transition-all pb-2">
+                  <input type="text" inputMode="numeric" value={form.amount} onChange={(e) => handleNumericInput('amount', e.target.value, 5)} className="w-full bg-transparent text-center outline-none text-5xl font-black tracking-tighter text-vora-primary" />
+                  <span className="text-[10px] font-bold text-vora-tertiary mb-2">G/ML</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {["BREAKFAST", "LUNCH", "DINNER", "SNACK"].map(t => (
+                  <button key={t} onClick={() => setForm({...form, type: t})} className={`py-4 rounded-2xl text-[9px] font-bold uppercase tracking-widest transition-all border ${form.type === t ? "bg-vora-accent text-vora-on-accent border-vora-accent shadow-xl shadow-vora-accent/20" : "bg-white/[0.02] border-white/5 text-vora-tertiary hover:bg-white/5"}`}>
+                    {t === "BREAKFAST" ? "Sabah" : t === "LUNCH" ? "Öğle" : t === "DINNER" ? "Akşam" : "Ara"}
                   </button>
                 ))}
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Navigation Buttons */}
-      <div className="mt-auto pt-6 flex gap-3 shrink-0 pb-1">
+      <div className="flex gap-4 pt-10 mt-auto">
         {step > 1 && (
-          <button
-            onClick={prevStep}
-            className="p-5 bg-white/5 text-vora-primary rounded-[1.8rem] hover:bg-white/10 transition-all"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+          <button onClick={() => setStep(step - 1)} className="flex-1 py-5 text-[10px] font-bold uppercase tracking-[0.3em] text-vora-tertiary hover:text-vora-primary transition-all border border-vora-border/10 rounded-[2rem]">GERİ</button>
         )}
-        
-        {step < 3 ? (
-          <button
-            onClick={nextStep}
-            disabled={step === 1 && !form.name}
-            className="flex-1 py-5 bg-vora-accent text-vora-on-accent rounded-[1.8rem] font-bold uppercase tracking-[0.3em] text-[10px] flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-30"
-          >
-            Devam Et <ChevronRight className="w-4 h-4" />
-          </button>
-        ) : (
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="flex-1 py-5 bg-vora-accent text-vora-on-accent rounded-[1.8rem] font-bold uppercase tracking-[0.3em] text-[10px] shadow-lg shadow-vora-accent/10 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50"
-          >
-            {loading ? "KAYDEDİLİYOR..." : "ÖĞÜNÜ TAMAMLA"}
-          </button>
-        )}
+        <button 
+          onClick={() => step < 3 ? setStep(step + 1) : handleFinalSubmit()}
+          disabled={loading || (step === 1 && !form.name)}
+          className="flex-[2] py-5 bg-vora-accent text-vora-on-accent rounded-[2rem] font-bold uppercase tracking-[0.4em] text-[10px] shadow-xl shadow-vora-accent/10 hover:scale-[1.01] active:scale-[0.98] transition-all disabled:opacity-20"
+        >
+          {loading ? "SİSTEME KAYDEDİLİYOR..." : step < 3 ? "İLERLE" : "KAYDI TAMAMLA"}
+        </button>
       </div>
     </div>
   );
