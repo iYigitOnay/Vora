@@ -9,14 +9,16 @@ import { SearchAction } from "./actions/SearchAction";
 import { Droplets, Plus, Barcode, Search } from "lucide-react";
 
 export type ActionType = "water" | "manual" | "barcode" | "search" | null;
+export type MealType = "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK";
 
 interface QuickActionsManagerProps {
   activeAction: ActionType;
+  initialMealType?: MealType;
   onClose: () => void;
   onRefresh: () => void;
 }
 
-export function QuickActionsManager({ activeAction, onClose, onRefresh }: QuickActionsManagerProps) {
+export function QuickActionsManager({ activeAction, initialMealType, onClose, onRefresh }: QuickActionsManagerProps) {
   const handleSuccess = () => {
     onRefresh();
     onClose();
@@ -44,7 +46,7 @@ export function QuickActionsManager({ activeAction, onClose, onRefresh }: QuickA
           icon={Plus}
           onClose={onClose}
         >
-          <ManualAction onSuccess={handleSuccess} />
+          <ManualAction onSuccess={handleSuccess} initialMealType={initialMealType} />
         </ActionModal>
       )}
 
@@ -56,7 +58,7 @@ export function QuickActionsManager({ activeAction, onClose, onRefresh }: QuickA
           icon={Barcode}
           onClose={onClose}
         >
-          <BarcodeAction onSuccess={handleSuccess} />
+          <BarcodeAction onSuccess={handleSuccess} initialMealType={initialMealType} />
         </ActionModal>
       )}
 
@@ -68,7 +70,7 @@ export function QuickActionsManager({ activeAction, onClose, onRefresh }: QuickA
           icon={Search}
           onClose={onClose}
         >
-          <SearchAction onSuccess={handleSuccess} />
+          <SearchAction onSuccess={handleSuccess} initialMealType={initialMealType} />
         </ActionModal>
       )}
     </AnimatePresence>

@@ -8,12 +8,12 @@ import { useNotificationStore } from "@/store/useNotificationStore";
 
 interface ManualActionProps {
   onSuccess: () => void;
+  initialMealType?: string;
 }
 
-export function ManualAction({ onSuccess }: ManualActionProps) {
+export function ManualAction({ onSuccess, initialMealType }: ManualActionProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const notify = useNotificationStore();
   const [form, setForm] = useState({
     name: "",
     brand: "",
@@ -22,44 +22,34 @@ export function ManualAction({ onSuccess }: ManualActionProps) {
     carbs: "",
     fat: "",
     amount: "100",
-    type: "BREAKFAST",
+    type: initialMealType || "BREAKFAST",
   });
 
-  const handleNumericInput = (field: string, val: string, maxChars: number = 5) => {
-    const cleaned = val.replace(/[^0-9]/g, "").slice(0, maxChars);
+  const notify = useNotificationStore();
+
+  const handleNumericInput = (field: string, val: string, max: number) => {
+    const cleaned = val.replace(/[^0-9]/g, "").slice(0, max);
     setForm({ ...form, [field]: cleaned });
   };
 
-  const isStep1Valid = form.name.trim().length > 0;
-  const isStep2Valid = form.calories !== "" || form.protein !== "" || form.carbs !== "" || form.fat !== "";
-
   const handleNextStep = () => {
-    if (step === 1 && !isStep1Valid) return;
-    if (step === 2 && !isStep2Valid) return;
+    if (step === 1 && !form.name) return;
+    if (step === 2 && !form.calories) return;
     setStep(step + 1);
   };
 
   const handleFinalSubmit = async () => {
-    if (!form.amount || Number(form.amount) <= 0) return;
     setLoading(true);
     try {
-      const foodRes = await api.post("/food/manual", {
-        name: form.name,
-        brand: form.brand,
-        calories: Number(form.calories) || 0,
+      await api.post("/meal/manual", {
+        ...form,
+        calories: Number(form.calories),
         protein: Number(form.protein) || 0,
         carbs: Number(form.carbs) || 0,
         fat: Number(form.fat) || 0,
-        defaultAmount: 100,
-      });
-
-      await api.post("/meal/log", {
-        foodId: foodRes.data.id,
-        type: form.type,
         amount: Number(form.amount),
       });
-
-      notify.show("Özel tarifin eklendi.", "success");
+      notify.show("Manuel giriş başarılı.", "success");
       onSuccess();
     } catch (err) {
       notify.show("Kayıt hatası.", "error");
@@ -122,12 +112,14 @@ export function ManualAction({ onSuccess }: ManualActionProps) {
       {/* Persistent Navigation Footer (Within Main Area) */}
       <div className="flex gap-4 shrink-0 mt-8 mb-4">
         {step > 1 && (
-          <button onClick={() => setStep(step - 1)} className="flex-1 py-4 text-[9px] font-black uppercase tracking-[0.3em] text-vora-tertiary hover:text-vora-primary transition-all border border-vora-border/10 rounded-2xl outline-none">GERİ</button>
+          <button onClick={() => setStep(step - 1)} className="p-5 bg-white/[0.03] border border-vora-border/10 rounded-2xl text-vora-tertiary hover:bg-white/[0.05] transition-all outline-none">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
         )}
         <button 
-          onClick={() => step < 3 ? handleNextStep() : handleFinalSubmit()}
-          disabled={loading || (step === 1 && !isStep1Valid) || (step === 2 && !isStep2Valid)}
-          className="flex-[2] py-4 bg-vora-accent text-vora-on-accent rounded-2xl font-black uppercase tracking-[0.3em] text-[9px] shadow-lg shadow-vora-accent/10 hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-20 outline-none"
+          onClick={step === 3 ? handleFinalSubmit : handleNextStep}
+          disabled={loading || (step === 1 && !form.name) || (step === 2 && !form.calories)}
+          className="flex-1 p-5 bg-vora-accent text-vora-on-accent rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] shadow-lg shadow-vora-accent/10 hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-20 outline-none"
         >
           {loading ? "İŞLENİYOR..." : step < 3 ? "İLERLE" : "TAMAMLA"}
         </button>

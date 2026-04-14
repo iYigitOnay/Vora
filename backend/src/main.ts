@@ -15,7 +15,7 @@ async function bootstrap() {
   // CORS desteği (Frontend ile konuşmak için)
   app.enableCors();
 
-  await app.listen(process.env.PORT ?? 3001);
+  await app.listen(process.env.PORT ?? 3002);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();

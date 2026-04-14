@@ -8,6 +8,7 @@ import { useNotificationStore } from "@/store/useNotificationStore";
 
 interface SearchActionProps {
   onSuccess: () => void;
+  initialMealType?: string;
 }
 
 const SourceTag = ({ isGlobal }: { isGlobal: boolean }) => {
@@ -23,14 +24,14 @@ const SourceTag = ({ isGlobal }: { isGlobal: boolean }) => {
   );
 };
 
-export function SearchAction({ onSuccess }: SearchActionProps) {
+export function SearchAction({ onSuccess, initialMealType }: SearchActionProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [selectedFood, setSelectedFood] = useState<any>(null);
   const [amount, setAmount] = useState<string>("100");
-  const [mealType, setMealType] = useState("BREAKFAST");
+  const [mealType, setMealType] = useState(initialMealType || "BREAKFAST");
   const notify = useNotificationStore();
 
   useEffect(() => {

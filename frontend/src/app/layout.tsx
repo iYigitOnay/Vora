@@ -1,18 +1,8 @@
-'use client';
-
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { ClientLayoutProvider } from "@/components/layout/ClientLayoutProvider";
 import { Notification } from "@/components/ui/Notification";
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,14 +14,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const metadata = {
+  title: "Vora // Sustainable Health Architecture",
+  description: "AI Driven Health and Nutrition Assistant",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pathname = usePathname();
-  const isAuthPage = pathname === '/auth';
-
   return (
     <html
       lang="tr"
@@ -58,15 +50,9 @@ export default function RootLayout({
       <body className="min-h-full flex bg-vora-background text-vora-primary selection:bg-vora-accent/30 overflow-x-hidden">
         <ThemeProvider>
           <Notification />
-          {!isAuthPage && <Sidebar />}
-          <main className={cn(
-            "flex-1 min-h-screen",
-            !isAuthPage ? "pl-0 md:pl-[280px]" : "pl-0"
-          )}>
-            <div className="p-8 md:p-12 max-w-[1600px] mx-auto">
-              {children}
-            </div>
-          </main>
+          <ClientLayoutProvider>
+            {children}
+          </ClientLayoutProvider>
         </ThemeProvider>
       </body>
     </html>
