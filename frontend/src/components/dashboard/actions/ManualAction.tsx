@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ChevronLeft, Flame, Target, Droplets, Scale } from "lucide-react";
+import { ChevronRight, ChevronLeft, Flame, Target, Droplets, Scale, Home, Utensils } from "lucide-react";
 import api from "@/lib/api";
 import { useNotificationStore } from "@/store/useNotificationStore";
+import { useAppStore } from "@/store/useAppStore";
 
 interface ManualActionProps {
   onSuccess: () => void;
@@ -14,6 +15,7 @@ interface ManualActionProps {
 export function ManualAction({ onSuccess, initialMealType }: ManualActionProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [consumeFromInventory, setConsumeFromInventory] = useState(false);
   const [form, setForm] = useState({
     name: "",
     brand: "",
@@ -26,9 +28,15 @@ export function ManualAction({ onSuccess, initialMealType }: ManualActionProps) 
   });
 
   const notify = useNotificationStore();
+  const { setInventory, inventory } = useAppStore();
 
   const handleNumericInput = (field: string, val: string, max: number) => {
-    const cleaned = val.replace(/[^0-9]/g, "").slice(0, max);
+    // Sadece rakamları al, başta 0 varsa temizle (eğer boş değilse)
+    let cleaned = val.replace(/[^0-9]/g, "");
+    if (cleaned.length > 1 && cleaned.startsWith("0")) {
+      cleaned = cleaned.replace(/^0+/, "");
+    }
+    cleaned = cleaned.slice(0, max);
     setForm({ ...form, [field]: cleaned });
   };
 
@@ -41,18 +49,26 @@ export function ManualAction({ onSuccess, initialMealType }: ManualActionProps) 
   const handleFinalSubmit = async () => {
     setLoading(true);
     try {
-      await api.post("/meal/manual", {
+      const res = await api.post("/meal/manual", {
         ...form,
         calories: Number(form.calories),
         protein: Number(form.protein) || 0,
         carbs: Number(form.carbs) || 0,
         fat: Number(form.fat) || 0,
         amount: Number(form.amount),
+        consumeFromInventory,
       });
-      notify.show("Manuel giriş başarılı.", "success");
+
+      // Eğer stoktan düşüldüyse, local store'u da güncelle (Refetch yerine anlık tepki)
+      if (consumeFromInventory) {
+        const invRes = await api.get("/inventory");
+        setInventory(invRes.data);
+      }
+
+      notify.show("Öğün başarıyla eklendi.", "success");
       onSuccess();
     } catch (err) {
-      notify.show("Kayıt hatası.", "error");
+      notify.show("Kayıt sırasında bir hata oluştu.", "error");
     } finally {
       setLoading(false);
     }
@@ -91,12 +107,35 @@ export function ManualAction({ onSuccess, initialMealType }: ManualActionProps) 
               ))}
             </motion.div>
           ) : (
-            <motion.div key="s3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-16">
+            <motion.div key="s3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-12">
               <div className="relative group max-w-[220px] mx-auto text-center">
                 <label className="text-[10px] font-black text-vora-tertiary uppercase tracking-[0.4em] mb-4 block opacity-30">MİKTAR (G/ML)</label>
                 <input autoFocus type="text" inputMode="numeric" value={form.amount} onChange={(e) => handleNumericInput('amount', e.target.value, 5)} onKeyDown={(e) => e.key === 'Enter' && handleFinalSubmit()} className="w-full bg-transparent text-center outline-none text-6xl font-black tracking-tighter text-vora-primary" />
                 <div className="h-0.5 w-full bg-vora-accent/20 mt-4" />
               </div>
+
+              {/* Smart Inventory Toggle */}
+              <div className="bg-white/[0.02] border border-vora-border/10 rounded-3xl p-6 flex items-center justify-between group/toggle hover:bg-white/[0.04] transition-all">
+                <div className="flex items-center gap-4">
+                  <div className={`p-3 rounded-2xl transition-all ${consumeFromInventory ? "bg-vora-accent/10 text-vora-accent" : "bg-white/5 text-vora-tertiary"}`}>
+                    <Home className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-[11px] font-bold text-vora-primary uppercase tracking-widest">Kilerimden Kullan</h4>
+                    <p className="text-[8px] font-bold text-vora-tertiary uppercase tracking-[0.2em] mt-1">Stok miktarını otomatik düşer</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setConsumeFromInventory(!consumeFromInventory)}
+                  className={`w-14 h-8 rounded-full relative transition-all duration-300 ${consumeFromInventory ? "bg-vora-accent" : "bg-white/10"}`}
+                >
+                  <motion.div 
+                    animate={{ x: consumeFromInventory ? 24 : 4 }}
+                    className="absolute top-1 left-0 w-6 h-6 bg-white rounded-full shadow-lg"
+                  />
+                </button>
+              </div>
+
               <div className="grid grid-cols-4 gap-3">
                 {["BREAKFAST", "LUNCH", "DINNER", "SNACK"].map(t => (
                   <button key={t} onClick={() => setForm({...form, type: t as any})} className={`py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all border outline-none ${form.type === t ? "bg-vora-accent text-vora-on-accent border-vora-accent" : "bg-white/[0.02] border-vora-border/10 text-vora-tertiary"}`}>
