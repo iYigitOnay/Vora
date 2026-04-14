@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { FoodModule } from './food/food.module';
 import { MealModule } from './meal/meal.module';
+import { InventoryModule } from './inventory/inventory.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { MealModule } from './meal/meal.module';
     DashboardModule,
     FoodModule,
     MealModule,
+    InventoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
