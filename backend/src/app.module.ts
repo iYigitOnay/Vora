@@ -9,6 +9,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { FoodModule } from './food/food.module';
 import { MealModule } from './meal/meal.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { TemplatesModule } from './templates/templates.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { InventoryModule } from './inventory/inventory.module';
     FoodModule,
     MealModule,
     InventoryModule,
+    TemplatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
