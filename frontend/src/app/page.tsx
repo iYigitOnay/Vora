@@ -106,28 +106,28 @@ export default function HomePage() {
 
         <BentoCard title="Hızlı İşlemler" icon={Plus} className="md:col-span-4 md:row-span-2">
           <div className="flex flex-col gap-2.5 h-full justify-center">
-            <button onClick={() => setActiveAction("search")} className="flex-1 p-3.5 bg-white/[0.02] hover:bg-vora-accent/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all text-left">
+            <button onClick={() => setActiveAction("search")} className="flex-1 p-3.5 bg-white/[0.02] hover:bg-vora-accent/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all text-left outline-none focus:outline-none focus:ring-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-vora-accent/10 text-vora-accent rounded-xl"><Search className="w-4 h-4" /></div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-vora-primary">Besin Ara</span>
               </div>
               <ChevronRight className="w-4 h-4 text-vora-tertiary group-hover:text-vora-accent transition-colors" />
             </button>
-            <button onClick={() => setActiveAction("barcode")} className="flex-1 p-3.5 bg-white/[0.02] hover:bg-vora-accent/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all text-left text-vora-primary">
+            <button onClick={() => setActiveAction("barcode")} className="flex-1 p-3.5 bg-white/[0.02] hover:bg-vora-accent/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all text-left text-vora-primary outline-none focus:outline-none focus:ring-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-vora-accent/10 text-vora-accent rounded-xl"><Barcode className="w-4 h-4" /></div>
                 <span className="text-[10px] font-bold uppercase tracking-wider">Barkod Tarama</span>
               </div>
               <ChevronRight className="w-4 h-4 text-vora-tertiary group-hover:text-vora-accent transition-colors" />
             </button>
-            <button onClick={() => setActiveAction("manual")} className="flex-1 p-3.5 bg-white/[0.02] hover:bg-vora-accent/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all text-left text-vora-primary">
+            <button onClick={() => setActiveAction("manual")} className="flex-1 p-3.5 bg-white/[0.02] hover:bg-vora-accent/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all text-left text-vora-primary outline-none focus:outline-none focus:ring-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-vora-accent/10 text-vora-accent rounded-xl"><Plus className="w-4 h-4" /></div>
                 <span className="text-[10px] font-bold uppercase tracking-wider">Manuel Giriş</span>
               </div>
               <ChevronRight className="w-4 h-4 text-vora-tertiary group-hover:text-vora-accent transition-colors" />
             </button>
-            <button onClick={() => setActiveAction("water")} className="flex-1 p-3.5 bg-white/[0.02] hover:bg-vora-accent/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all text-left text-vora-primary">
+            <button onClick={() => setActiveAction("water")} className="flex-1 p-3.5 bg-white/[0.02] hover:bg-vora-accent/[0.03] border border-vora-border/20 rounded-2xl flex items-center justify-between group transition-all text-left text-vora-primary outline-none focus:outline-none focus:ring-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-vora-accent/10 text-vora-accent rounded-xl"><Droplets className="w-4 h-4" /></div>
                 <span className="text-[10px] font-bold uppercase tracking-wider">Su Ekle</span>
@@ -147,12 +147,6 @@ export default function HomePage() {
       </div>
 
       <QuickActionsManager activeAction={activeAction} onClose={() => setActiveAction(null)} onRefresh={fetchSummary} />
-
-      <footer className="mt-6 text-center opacity-30 pb-2">
-        <p className="text-[8px] font-medium tracking-[0.2em] uppercase max-w-2xl mx-auto leading-relaxed text-vora-tertiary italic">
-          Vora AI // Sustainable Health Architecture
-        </p>
-      </footer>
-    </div>
-  );
-}
+      </div>
+      );
+      }

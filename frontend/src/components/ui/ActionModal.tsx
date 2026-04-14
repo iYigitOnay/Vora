@@ -73,19 +73,9 @@ export function ActionModal({ onClose, title, subtitle, icon: Icon, children }: 
           </button>
         </div>
 
-        {/* Action Content (420px) - Center aligned, No scrolling allowed */}
-        <div className="flex-1 px-8 overflow-hidden relative">
+        {/* Action Content (500px) - Center aligned, No scrolling allowed */}
+        <div className="flex-1 px-8 pb-8 overflow-hidden relative flex flex-col justify-center">
           {children}
-        </div>
-
-        {/* Fixed Footer (80px) */}
-        <div className="h-[80px] border-t border-vora-border/5 bg-white/[0.01] flex justify-center items-center shrink-0">
-          <div className="flex items-center gap-2.5 opacity-20">
-            <div className="w-1 h-1 rounded-full bg-vora-accent animate-pulse" />
-            <p className="text-[7px] text-vora-tertiary uppercase tracking-[0.6em] font-bold italic">
-              VORA SYSTEM ARCHITECTURE
-            </p>
-          </div>
         </div>
       </motion.div>
     </motion.div>
