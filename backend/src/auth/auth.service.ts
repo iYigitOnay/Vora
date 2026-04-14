@@ -52,7 +52,9 @@ export class AuthService {
       },
     });
 
-    return this.generateTokens(user.id, user.email);
+    const tokens = await this.generateTokens(user.id, user.email);
+    await this.updateRefreshToken(user.id, tokens.refresh_token);
+    return tokens;
   }
 
   async login(dto: LoginDto) {
@@ -69,19 +71,62 @@ export class AuthService {
       throw new UnauthorizedException('E-posta veya şifre hatalı.');
     }
 
-    return this.generateTokens(user.id, user.email);
+    const tokens = await this.generateTokens(user.id, user.email);
+    await this.updateRefreshToken(user.id, tokens.refresh_token);
+    return tokens;
+  }
+
+  async logout(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null },
+    });
+  }
+
+  async refreshTokens(userId: string, refreshToken: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || !user.refreshToken) {
+      throw new UnauthorizedException('Erişim reddedildi.');
+    }
+
+    const refreshTokenMatches = await bcrypt.compare(refreshToken, user.refreshToken);
+    if (!refreshTokenMatches) {
+      throw new UnauthorizedException('Erişim reddedildi.');
+    }
+
+    const tokens = await this.generateTokens(user.id, user.email);
+    await this.updateRefreshToken(user.id, tokens.refresh_token);
+    return tokens;
+  }
+
+  async updateRefreshToken(userId: string, refreshToken: string) {
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: hashedRefreshToken },
+    });
   }
 
   private async generateTokens(userId: string, email: string) {
     const payload = { sub: userId, email };
     
-    const accessToken = await this.jwtService.signAsync(payload, {
-      secret: this.configService.get<string>('JWT_SECRET'),
-      expiresIn: '7d', // Test aşamasında süreyi uzattım
-    });
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+        expiresIn: '15m', // Access token kısa süreli
+      }),
+      this.jwtService.signAsync(payload, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET') || 'refresh-secret-vora-2026',
+        expiresIn: '30d', // Refresh token uzun süreli
+      }),
+    ]);
 
     return {
       access_token: accessToken,
+      refresh_token: refreshToken,
     };
   }
 }

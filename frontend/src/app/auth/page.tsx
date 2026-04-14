@@ -116,6 +116,11 @@ export default function AuthPage() {
       };
       const res = await api.post(endpoint, payload);
       localStorage.setItem('vora_access_token', res.data.access_token);
+      localStorage.setItem('vora_refresh_token', res.data.refresh_token);
+      // Backend'den dönen veride userId sub alanında (JWT payload) ama 
+      // AuthService'deki generateTokens metodunu bir tık güncelleyip userId'yi de dönebiliriz 
+      // veya token'dan decode edebiliriz. En garantisi backend'in de dönmesi.
+      localStorage.setItem('vora_user_id', res.data.userId || ''); 
       router.push('/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Giriş yapılamadı.');
