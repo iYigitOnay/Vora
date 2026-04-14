@@ -46,6 +46,7 @@ export class FoodService {
         barcode: barcode,
         image: product.image_url || '',
         status: FoodStatus.COMMUNITY,
+        creatorId: userId,
       };
 
       return await this.prisma.food.upsert({

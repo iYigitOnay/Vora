@@ -7,7 +7,7 @@ export class FoodController {
   constructor(private readonly foodService: FoodService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Get('scan/:barcode')
+  @Get('barcode/:barcode')
   scanBarcode(@Param('barcode') barcode: string, @Request() req) {
     return this.foodService.scanBarcode(barcode, req.user.id);
   }
