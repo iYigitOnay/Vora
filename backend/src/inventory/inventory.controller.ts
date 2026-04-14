@@ -11,26 +11,26 @@ export class InventoryController {
 
   @Get()
   findAll(@Request() req) {
-    return this.inventoryService.findAll(req.user.id);
+    return this.inventoryService.findAll(req.user.userId);
   }
 
   @Post()
   create(@Request() req, @Body() data: CreateInventoryDto) {
-    return this.inventoryService.create(req.user.id, data);
+    return this.inventoryService.create(req.user.userId, data);
   }
 
   @Patch(':id')
   update(@Request() req, @Param('id') id: string, @Body() data: UpdateInventoryDto) {
-    return this.inventoryService.update(req.user.id, id, data);
+    return this.inventoryService.update(req.user.userId, id, data);
   }
 
   @Delete(':id')
   remove(@Request() req, @Param('id') id: string) {
-    return this.inventoryService.remove(req.user.id, id);
+    return this.inventoryService.remove(req.user.userId, id);
   }
 
   @Get('alerts')
   getAlerts(@Request() req) {
-    return this.inventoryService.checkThresholds(req.user.id);
+    return this.inventoryService.checkThresholds(req.user.userId);
   }
 }

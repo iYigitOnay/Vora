@@ -10,16 +10,16 @@ export class TemplatesController {
 
   @Get()
   findAll(@Request() req) {
-    return this.templatesService.findAll(req.user.id);
+    return this.templatesService.findAll(req.user.userId);
   }
 
   @Post()
   create(@Request() req, @Body() data: CreateTemplateDto) {
-    return this.templatesService.create(req.user.id, data);
+    return this.templatesService.create(req.user.userId, data);
   }
 
   @Delete(':id')
   remove(@Request() req, @Param('id') id: string) {
-    return this.templatesService.remove(req.user.id, id);
+    return this.templatesService.remove(req.user.userId, id);
   }
 }
