@@ -33,6 +33,12 @@ enum Goal {
   GAIN_WEIGHT
 }
 
+enum Plan {
+  FREE
+  PREMIUM
+  ELITE
+}
+
 enum MealType {
   BREAKFAST
   LUNCH
@@ -50,6 +56,7 @@ model User {
   profile   Profile?
   
   // İlişkiler
+  plan          Plan     @default(FREE)
   meals         Meal[]
   waterLogs     WaterLog[]
   foods         Food[]          // Kullanıcının kendi eklediği özel yiyecekler
@@ -142,6 +149,8 @@ model MealItem {
   customName  String?  // Kullanıcının verdiği özel isim
   note        String?  // Ekstra not (örn: "Bol tuzlu")
   
+  deductedFromInventory Boolean @default(false) // Kiler stok düşüm takibi
+
   mealId      String
   meal        Meal     @relation(fields: [mealId], references: [id], onDelete: Cascade)
   
@@ -184,7 +193,8 @@ model Inventory {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   foodId    String
   food      Food     @relation(fields: [foodId], references: [id])
-  quantity  Float    // Mevcut stok (g veya ml)
+  quantity  Float    // Mevcut stok (g, ml veya adet)
+  unit      String   @default("g") // g, ml, adet
   minLimit  Float?   // Kritik stok uyarısı için
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
