@@ -51,6 +51,19 @@ export class InventoryService {
         unit: data.unit || 'g',
         minLimit: data.minLimit,
       },
+      include: {
+        food: {
+          select: {
+            name: true,
+            brand: true,
+            calories: true,
+            protein: true,
+            carbs: true,
+            fat: true,
+            image: true,
+          },
+        },
+      },
     });
   }
 
@@ -64,6 +77,19 @@ export class InventoryService {
     return this.prisma.inventory.update({
       where: { id },
       data,
+      include: {
+        food: {
+          select: {
+            name: true,
+            brand: true,
+            calories: true,
+            protein: true,
+            carbs: true,
+            fat: true,
+            image: true,
+          },
+        },
+      },
     });
   }
 
