@@ -26,7 +26,13 @@ export class MealController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('log-water')
+  @Post('template/apply')
+  applyTemplate(@Request() req, @Body() data: { templateId: string; type: any; date?: string }) {
+    return this.mealService.applyTemplate(req.user.userId, data);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('water')
   logWater(@Request() req, @Body('amount') amount: number) {
     return this.mealService.logWater(req.user.userId, amount);
   }

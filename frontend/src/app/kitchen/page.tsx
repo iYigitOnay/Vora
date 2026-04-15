@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Package, Library, Search, Plus, ArrowRight, Trash2, AlertTriangle, ChefHat, Info, X, Zap } from "lucide-react";
+import { Package, Library, Search, Plus, ArrowRight, Trash2, AlertTriangle, ChefHat, Info, X, Zap, Clock, UtensilsCrossed, Flame } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/cards/DashboardHeader";
 import { useAppStore } from "@/store/useAppStore";
 import api from "@/lib/api";
 import AddInventoryModal from "@/components/kitchen/AddInventoryModal";
 import CreateTemplateModal from "@/components/kitchen/CreateTemplateModal";
 import RestockModal from "@/components/kitchen/RestockModal";
+import { useNotificationStore } from "@/store/useNotificationStore";
 
-const BentoCard = ({ children, className, title, icon: Icon, action }: any) => (
+const BentoCard = ({ children, className, title, icon: Icon, action, headerAction }: any) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -18,12 +19,14 @@ const BentoCard = ({ children, className, title, icon: Icon, action }: any) => (
   >
     <div className="flex justify-between items-center mb-6">
       <div className="flex items-center gap-4">
-        <div className="p-3 bg-vora-accent/5 rounded-2xl text-vora-accent border border-vora-accent/10 group-hover:scale-110 transition-transform">
+        <div className="p-3 bg-vora-accent/5 rounded-2xl text-vora-accent border border-vora-accent/10 group-hover:scale-110 transition-transform shrink-0">
           <Icon className="w-5 h-5" />
         </div>
-        <h3 className="text-[11px] font-bold text-vora-tertiary uppercase tracking-[0.3em] opacity-60">
-          {title}
-        </h3>
+        {headerAction ? headerAction : (
+          <h3 className="text-[11px] font-bold text-vora-tertiary uppercase tracking-[0.3em] opacity-60">
+            {title}
+          </h3>
+        )}
       </div>
       {action && action}
     </div>
@@ -37,6 +40,9 @@ export default function KitchenPage() {
   const [showAddInventory, setShowAddInventory] = useState(false);
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
   const [selectedRestockItem, setSelectedRestockItem] = useState<any>(null);
+  const [applyingTemplate, setApplyingTemplate] = useState<string | null>(null);
+
+  const notify = useNotificationStore();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,6 +62,16 @@ export default function KitchenPage() {
     };
     fetchData();
   }, [setInventory, setTemplates, setLoading]);
+
+  const handleApplyTemplate = async (templateId: string, type: string) => {
+    try {
+      await api.post('/meal/template/apply', { templateId, type });
+      notify.show("Şablon günlüğe başarıyla eklendi.", "success");
+      setApplyingTemplate(null);
+    } catch (err) {
+      notify.show("Şablon uygulanırken bir hata oluştu.", "error");
+    }
+  };
 
   const handleDeleteInventory = async (id: string) => {
     try {
@@ -79,27 +95,35 @@ export default function KitchenPage() {
     <div className="h-[calc(100vh-100px)] flex flex-col justify-between overflow-hidden relative">
       <DashboardHeader user={user} auraStreak={dashboard?.auraStreak} title="MUTFAĞIM" subtitle="DİJİTAL ASİSTANINIZIN KALBİ" />
 
-      {/* Tab Selector */}
-      <div className="flex justify-center mb-8 shrink-0">
-        <div className="bg-vora-surface border border-vora-border/10 p-1 rounded-full flex gap-1 shadow-2xl shadow-black/20">
-          <button onClick={() => setActiveTab("inventory")} className={`px-8 py-2.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all ${activeTab === "inventory" ? "bg-vora-accent text-white shadow-lg shadow-vora-accent/20" : "text-vora-tertiary hover:text-vora-primary"}`} >
-            KİLERİM
-          </button>
-          <button onClick={() => setActiveTab("templates")} className={`px-8 py-2.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all ${activeTab === "templates" ? "bg-vora-accent text-white shadow-lg shadow-vora-accent/20" : "text-vora-tertiary hover:text-vora-primary"}`} >
-            ÖĞÜNLERİM
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 flex-1 min-h-0 mb-8 overflow-hidden">
+      {/* Grid Area */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 flex-1 min-h-0 mb-8 overflow-hidden mt-8">
         
         {/* Main List Area */}
         <BentoCard 
-          title={activeTab === "inventory" ? "KİLER STOKLARI" : "KAYITLI ÖĞÜNLER"} 
           icon={activeTab === "inventory" ? Package : ChefHat} 
           className="md:col-span-8 h-full"
+          headerAction={
+            <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-2xl relative">
+              {["inventory", "templates"].map((tab) => (
+                <button 
+                  key={tab}
+                  onClick={() => setActiveTab(tab as any)}
+                  className={`px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all relative z-10 ${activeTab === tab ? "text-white" : "text-vora-tertiary hover:text-vora-primary"}`}
+                >
+                  {tab === "inventory" ? "KİLERİM" : "ÖĞÜNLERİM"}
+                  {activeTab === tab && (
+                    <motion.div 
+                      layoutId="activeTab" 
+                      className="absolute inset-0 bg-vora-accent rounded-xl -z-10 shadow-lg shadow-vora-accent/20"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+          }
           action={
-            <button onClick={() => activeTab === "inventory" ? setShowAddInventory(true) : setShowCreateTemplate(true)} className="p-2 hover:bg-vora-accent/10 rounded-xl transition-colors text-vora-accent" >
+            <button onClick={() => activeTab === "inventory" ? setShowAddInventory(true) : setShowCreateTemplate(true)} className="p-2.5 bg-vora-accent/10 border border-vora-accent/20 rounded-xl text-vora-accent hover:bg-vora-accent hover:text-white transition-all shadow-sm" >
               <Plus className="w-5 h-5" />
             </button>
           }
@@ -120,7 +144,6 @@ export default function KitchenPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        {/* HIZLI İKMAL BUTONU (MODALI TETİKLER) */}
                         <button 
                           onClick={() => setSelectedRestockItem(item)}
                           className="flex items-center gap-2 px-3 py-1.5 bg-vora-accent/10 border border-vora-accent/20 rounded-xl text-vora-accent hover:bg-vora-accent hover:text-white transition-all opacity-0 group-hover/item:opacity-100"
@@ -147,14 +170,46 @@ export default function KitchenPage() {
               ) : (
                 templates.length > 0 ? (
                   templates.map((template) => (
-                    <motion.div key={template.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="p-5 bg-white/[0.02] border border-vora-border/10 rounded-3xl group/temp hover:bg-white/[0.04] transition-all" >
+                    <motion.div key={template.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="p-5 bg-white/[0.02] border border-vora-border/10 rounded-3xl group/temp hover:bg-white/[0.04] transition-all relative overflow-visible" >
                       <div className="flex justify-between items-start mb-4">
                         <div>
                           <h4 className="text-sm font-black text-vora-primary uppercase tracking-tight">{template.name}</h4>
                           <p className="text-[9px] text-vora-tertiary uppercase tracking-[0.2em] mt-1"> {template.items.length} BESİN • {Math.round(template.items.reduce((acc:any, curr:any) => acc + (curr.food.calories * curr.amount / 100), 0))} KCAL </p>
                         </div>
-                        <div className="flex gap-2">
-                           <button className="p-2 bg-vora-accent/10 text-vora-accent rounded-xl hover:bg-vora-accent hover:text-white transition-all shadow-lg shadow-vora-accent/10"> <Plus className="w-4 h-4" /> </button>
+                        <div className="flex gap-2 relative">
+                           <button 
+                            onClick={() => setApplyingTemplate(applyingTemplate === template.id ? null : template.id)}
+                            className={`p-2 rounded-xl transition-all shadow-lg ${applyingTemplate === template.id ? 'bg-vora-accent text-white' : 'bg-vora-accent/10 text-vora-accent hover:bg-vora-accent hover:text-white'}`}
+                           > 
+                            <Plus className="w-4 h-4" /> 
+                           </button>
+                           
+                           {/* Quick Apply Menu */}
+                           <AnimatePresence>
+                             {applyingTemplate === template.id && (
+                               <motion.div 
+                                initial={{ opacity: 0, scale: 0.9, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                className="absolute right-0 top-12 z-50 bg-vora-surface border border-vora-border/20 rounded-2xl p-2 shadow-2xl min-w-[140px] flex flex-col gap-1"
+                               >
+                                 {[
+                                   { id: 'BREAKFAST', l: 'Sabah', i: Clock },
+                                   { id: 'LUNCH', l: 'Öğle', i: UtensilsCrossed },
+                                   { id: 'DINNER', l: 'Akşam', i: Flame },
+                                   { id: 'SNACK', l: 'Ara', i: Zap }
+                                 ].map(m => (
+                                   <button 
+                                    key={m.id}
+                                    onClick={() => handleApplyTemplate(template.id, m.id)}
+                                    className="flex items-center gap-3 px-4 py-2 hover:bg-white/5 rounded-xl transition-all text-left group/m"
+                                   >
+                                     <m.i className="w-3.5 h-3.5 text-vora-tertiary group-hover/m:text-vora-accent" />
+                                     <span className="text-[9px] font-bold text-vora-primary uppercase tracking-widest">{m.l}</span>
+                                   </button>
+                                 ))}
+                               </motion.div>
+                             )}
+                           </AnimatePresence>
+
                            <button onClick={() => handleDeleteTemplate(template.id)} className="p-2 text-vora-tertiary hover:text-red-400 transition-all"> <Trash2 className="w-4 h-4" /> </button>
                         </div>
                       </div>
@@ -178,7 +233,7 @@ export default function KitchenPage() {
           </div>
         </BentoCard>
 
-        {/* Side Panel: Stats & Context */}
+        {/* Side Panel */}
         <div className="md:col-span-4 flex flex-col gap-8 h-full overflow-hidden">
           <BentoCard title="MUTFAK ÖZETİ" icon={Info} className="flex-1">
             <div className="space-y-6">

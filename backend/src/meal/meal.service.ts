@@ -95,6 +95,43 @@ export class MealService {
     });
   }
 
+  async applyTemplate(userId: string, data: { templateId: string; type: MealType; date?: string }) {
+    const template = await this.prisma.mealTemplate.findUnique({
+      where: { id: data.templateId },
+      include: { items: true },
+    });
+
+    if (!template) throw new BadRequestException('Şablon bulunamadı.');
+
+    const logDate = data.date ? new Date(data.date) : new Date();
+    
+    // Her bir item için logMeal mantığını çalıştır (Transaction içinde)
+    return this.prisma.$transaction(async (tx) => {
+      const startOfDay = new Date(logDate); startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(logDate); endOfDay.setHours(23, 59, 59, 999);
+
+      let meal = await tx.meal.findFirst({
+        where: { userId, type: data.type, date: { gte: startOfDay, lte: endOfDay } },
+      });
+
+      if (!meal) {
+        meal = await tx.meal.create({
+          data: { userId, type: data.type, date: logDate },
+        });
+      }
+
+      const mealItems = template.items.map((item) => ({
+        mealId: meal.id,
+        foodId: item.foodId,
+        amount: item.amount,
+      }));
+
+      return tx.mealItem.createMany({
+        data: mealItems,
+      });
+    });
+  }
+
   async logWater(userId: string, amount: number) {
     return this.prisma.waterLog.create({
       data: { userId, amount },
