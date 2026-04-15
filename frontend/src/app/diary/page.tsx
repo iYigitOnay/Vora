@@ -10,7 +10,7 @@ import { QuickActionsManager, ActionType, MealType } from "@/components/dashboar
 import { format, addDays, subDays, isSameDay, isAfter, isBefore, startOfDay } from "date-fns";
 import { tr } from "date-fns/locale";
 
-// --- Sub-Components (Senior Architecture) ---
+// --- Sub-Components ---
 
 const MacroDNALine = ({ p, c, f }: { p: number, c: number, f: number }) => {
   const total = p + c + f || 1;
@@ -38,11 +38,7 @@ const MealQuadrant = ({ type, items, onDelete, onAdd }: any) => {
   }, [items]);
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="bg-vora-surface/40 border border-white/5 rounded-[2.5rem] flex flex-col overflow-hidden relative group min-h-0"
-    >
+    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="bg-vora-surface/40 border border-white/5 rounded-[2.5rem] flex flex-col overflow-hidden relative group min-h-0" >
       <div className="p-5 flex justify-between items-start shrink-0">
         <div className="flex items-center gap-3">
           <div className={`p-2.5 rounded-xl bg-white/5 border border-white/5 ${type.color}`}>
@@ -130,33 +126,37 @@ const ConcentricRings = ({ consumed, targets }: any) => {
 // --- Main Page ---
 
 export default function DiaryPage() {
-  const { user, dashboard } = useAppStore();
+  const { user, dashboard, setDashboard } = useAppStore();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [dailyMeals, setDailyMeals] = useState<any[]>([]);
   const [activeAction, setActiveAction] = useState<ActionType>(null);
   const [initialMealType, setInitialMealType] = useState<MealType>("BREAKFAST");
 
-  // 7-Day Restriction Logic
   const today = useMemo(() => startOfDay(new Date()), []);
   const minDate = useMemo(() => subDays(today, 6), [today]);
   
   const isAtMax = isSameDay(selectedDate, today) || isAfter(selectedDate, today);
   const isAtMin = isSameDay(selectedDate, minDate) || isBefore(selectedDate, minDate);
 
-  const fetchLogs = useCallback(async () => {
+  const fetchEverything = useCallback(async () => {
     try {
-      const res = await api.get(`/meal/daily?date=${selectedDate.toISOString()}`);
-      setDailyMeals(res.data);
+      const isoDate = selectedDate.toISOString();
+      const [mealsRes, summaryRes] = await Promise.all([
+        api.get(`/meal/daily?date=${isoDate}`),
+        api.get(`/dashboard/summary?date=${isoDate}`)
+      ]);
+      setDailyMeals(mealsRes.data);
+      setDashboard(summaryRes.data); // Store'u güncelleerek Spektrumu yenile
     } catch (err) {
       console.error("Fetch error:", err);
     }
-  }, [selectedDate]);
+  }, [selectedDate, setDashboard]);
 
-  useEffect(() => { fetchLogs(); }, [fetchLogs]);
+  useEffect(() => { fetchEverything(); }, [fetchEverything]);
 
   const handleDeleteItem = async (id: string) => {
     await api.delete(`/meal/item/${id}`);
-    fetchLogs();
+    fetchEverything();
   };
 
   const handleAddWithContext = (mealType: MealType) => {
@@ -173,32 +173,17 @@ export default function DiaryPage() {
 
   return (
     <div className="h-[calc(100vh-100px)] flex flex-col overflow-hidden">
-      <DashboardHeader 
-        user={user} 
-        auraStreak={dashboard?.auraStreak} 
-        title="GÜNLÜK LOG" 
-        subtitle="PERFORMANS VE ANALİZ MERKEZİ" 
-      />
+      <DashboardHeader user={user} auraStreak={dashboard?.auraStreak} title="GÜNLÜK LOG" subtitle="PERFORMANS VE ANALİZ MERKEZİ" />
 
       <div className="flex-1 min-h-0 grid grid-cols-12 gap-8 pb-4">
-        {/* Left Side: Meal Quadrants (8/12) */}
         <div className="col-span-12 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 grid-rows-2 gap-6 h-full min-h-0">
           {mealTypes.map((type) => (
-            <MealQuadrant 
-              key={type.id} 
-              type={type} 
-              items={dailyMeals.find(m => m.type === type.id)?.items || []} 
-              onDelete={handleDeleteItem}
-              onAdd={handleAddWithContext}
-            />
+            <MealQuadrant key={type.id} type={type} items={dailyMeals.find(m => m.type === type.id)?.items || []} onDelete={handleDeleteItem} onAdd={handleAddWithContext} />
           ))}
         </div>
 
-        {/* Right Side: Insights & Controls Sidebar (4/12) */}
         <div className="hidden lg:col-span-4 lg:flex flex-col h-full min-h-0">
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 bg-vora-surface border border-white/5 rounded-[3rem] p-8 flex flex-col items-center overflow-hidden h-full">
-            
-            {/* System Tools */}
             <div className="w-full flex items-center justify-between gap-3 mb-8 shrink-0">
               <button onClick={() => { setInitialMealType("BREAKFAST"); setActiveAction("search"); }} className="flex-1 flex flex-col items-center gap-2 p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/[0.05] transition-all group outline-none">
                 <Search className="w-4 h-4 text-vora-tertiary group-hover:text-vora-primary" />
@@ -221,7 +206,6 @@ export default function DiaryPage() {
               targets={dashboard?.targets || { calories: 2000, protein: 150, water: 2500 }} 
             />
 
-            {/* Fixed Spectrum Stats - No Scroll */}
             <div className="w-full space-y-3 mt-4 shrink-0">
               {[
                 { label: "KALORİ", val: `${Math.round(dashboard?.consumed.calories || 0)}/${dashboard?.targets.calories}`, color: "bg-vora-accent" },
@@ -238,7 +222,6 @@ export default function DiaryPage() {
               ))}
             </div>
 
-            {/* Time Control Center - With 7 Day Limit */}
             <div className="mt-auto pt-8 border-t border-white/5 w-full shrink-0">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -249,11 +232,7 @@ export default function DiaryPage() {
               </div>
               
               <div className="flex items-center justify-between p-2 bg-white/[0.02] border border-white/5 rounded-full">
-                <button 
-                  disabled={isAtMin}
-                  onClick={() => setSelectedDate(subDays(selectedDate, 1))} 
-                  className={`p-3 rounded-full text-vora-tertiary transition-all outline-none ${isAtMin ? "opacity-10 cursor-not-allowed" : "hover:bg-white/5"}`}
-                >
+                <button disabled={isAtMin} onClick={() => setSelectedDate(subDays(selectedDate, 1))} className={`p-3 rounded-full text-vora-tertiary transition-all outline-none ${isAtMin ? "opacity-10 cursor-not-allowed" : "hover:bg-white/5"}`} >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <div className="text-center">
@@ -262,11 +241,7 @@ export default function DiaryPage() {
                   </p>
                   <p className="text-[8px] font-bold text-vora-accent uppercase tracking-tighter opacity-60 italic">{format(selectedDate, "EEEE", { locale: tr })}</p>
                 </div>
-                <button 
-                  disabled={isAtMax}
-                  onClick={() => setSelectedDate(addDays(selectedDate, 1))} 
-                  className={`p-3 rounded-full text-vora-tertiary transition-all outline-none ${isAtMax ? "opacity-10 cursor-not-allowed" : "hover:bg-white/5"}`}
-                >
+                <button disabled={isAtMax} onClick={() => setSelectedDate(addDays(selectedDate, 1))} className={`p-3 rounded-full text-vora-tertiary transition-all outline-none ${isAtMax ? "opacity-10 cursor-not-allowed" : "hover:bg-white/5"}`} >
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -275,12 +250,7 @@ export default function DiaryPage() {
         </div>
       </div>
 
-      <QuickActionsManager 
-        activeAction={activeAction} 
-        initialMealType={initialMealType}
-        onClose={() => setActiveAction(null)} 
-        onRefresh={fetchLogs} 
-      />
+      <QuickActionsManager activeAction={activeAction} initialMealType={initialMealType} onClose={() => setActiveAction(null)} onRefresh={fetchEverything} />
     </div>
   );
 }

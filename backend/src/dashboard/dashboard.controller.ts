@@ -8,7 +8,7 @@ export class DashboardController {
 
   @UseGuards(JwtAuthGuard)
   @Get('summary')
-  getSummary(@Request() req) {
-    return this.dashboardService.getSummary(req.user.userId);
+  getSummary(@Request() req, @Query('date') date?: string) {
+    return this.dashboardService.getSummary(req.user.userId, date);
   }
 }
