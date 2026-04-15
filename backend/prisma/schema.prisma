@@ -1,0 +1,227 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Persona {
+  EMBER_MOSS   // Default: Cream × Forest (First impression)
+  NEURAL_DARK  // Tech: Gece mavisi + Teal (Bilimsel veri ve analiz)
+  FORGE_MODE   // Hardcore: Koyu zemin + Amber/Altın (Bodybuilding/Disiplin)
+  AURA_LIGHT   // Wellness: Beyaz/Lila + Mor (Sağlıklı yaşam ve huzur)
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum ActivityLevel {
+  SEDENTARY          // Masa başı iş, az veya hiç hareket
+  LIGHTLY_ACTIVE     // Haftada 1-3 gün hafif spor
+  MODERATELY_ACTIVE  // Haftada 3-5 gün orta tempolu spor
+  VERY_ACTIVE        // Haftada 6-7 gün ağır spor
+  EXTRA_ACTIVE       // Günde iki kez antrenman, fiziksel iş
+}
+
+enum Goal {
+  LOSE_WEIGHT
+  MAINTAIN_WEIGHT
+  GAIN_WEIGHT
+}
+
+enum Plan {
+  FREE
+  PREMIUM
+  ELITE
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  profile   Profile?
+  
+  // İlişkiler
+  plan          Plan     @default(FREE)
+  meals         Meal[]
+  waterLogs     WaterLog[]
+  foods         Food[]          // Kullanıcının kendi eklediği özel yiyecekler
+  templates     MealTemplate[]  // Kayıtlı öğün şablonları
+  inventory     Inventory[]     // Dijital Kiler
+  streak        Streak?         // Vora Flow Serisi
+
+  refreshToken String?
+
+  @@map("users")
+  @@index([email])
+}
+
+model Profile {
+  id               String        @id @default(cuid())
+  firstName        String
+  age              Int
+  gender           Gender
+  height           Float
+  weight           Float
+  targetWeight     Float
+  activityLevel    ActivityLevel
+  selectedPersona  Persona       @default(EMBER_MOSS)
+  goal             Goal
+
+  userId           String        @unique
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@map("profiles")
+}
+
+enum FoodStatus {
+  VERIFIED    // Vora ekibi tarafından onaylanmış kesin veri
+  COMMUNITY   // Kullanıcılar tarafından barkodla eklenmiş genel veri
+  PRIVATE     // Sadece ekleyen kullanıcıya özel veri
+}
+
+model Food {
+  id          String   @id @default(cuid())
+  name        String
+  calories    Float    // 100g/ml başına
+  protein     Float
+  carbs       Float
+  fat         Float
+  defaultAmount Float  @default(100) // Porsiyon desteği (örn: 75g, 420g)
+  barcode     String?  @unique
+  brand       String?
+  image       String?
+  
+  status      FoodStatus @default(COMMUNITY)
+  isGlobal    Boolean    @default(false) // Deprecated: Status kullanılacak
+  creatorId   String?
+  creator     User?      @relation(fields: [creatorId], references: [id])
+
+  mealItems     MealItem[]
+  templateItems TemplateItem[]
+  inventory     Inventory[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("foods")
+  @@index([barcode])
+  @@index([name])
+}
+
+model Meal {
+  id        String     @id @default(cuid())
+  type      MealType
+  date      DateTime   @default(now())
+  
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  items     MealItem[]
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("meals")
+  @@index([userId, date])
+}
+
+model MealItem {
+  id          String   @id @default(cuid())
+  amount      Float    // gram veya ml cinsinden
+  customName  String?  // Kullanıcının verdiği özel isim
+  note        String?  // Ekstra not (örn: "Bol tuzlu")
+  
+  deductedFromInventory Boolean @default(false) // Kiler stok düşüm takibi
+
+  mealId      String
+  meal        Meal     @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  
+  foodId      String
+  food        Food     @relation(fields: [foodId], references: [id])
+
+  createdAt   DateTime @default(now())
+
+  @@map("meal_items")
+  @@index([mealId])
+  @@index([foodId])
+}
+
+model MealTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     TemplateItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("meal_templates")
+}
+
+model TemplateItem {
+  id             String       @id @default(cuid())
+  amount         Float
+  mealTemplateId String
+  mealTemplate   MealTemplate @relation(fields: [mealTemplateId], references: [id], onDelete: Cascade)
+  foodId         String
+  food           Food         @relation(fields: [foodId], references: [id])
+
+  @@map("template_items")
+}
+
+model Inventory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodId    String
+  food      Food     @relation(fields: [foodId], references: [id])
+  quantity  Float    // Mevcut stok (g, ml veya adet)
+  unit      String   @default("g") // g, ml, adet
+  minLimit  Float?   // Kritik stok uyarısı için
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("inventory")
+}
+
+model Streak {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  count       Int      @default(0)
+  lastLogDate DateTime @default(now())
+
+  @@map("streaks")
+}
+
+model WaterLog {
+  id        String   @id @default(cuid())
+  amount    Int      // ml cinsinden (örn: 250)
+  date      DateTime @default(now())
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("water_logs")
+  @@index([userId, date])
+}
