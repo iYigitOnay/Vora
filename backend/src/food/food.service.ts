@@ -55,8 +55,11 @@ export class FoodService {
         create: foodData,
       });
     } catch (error) {
-      if (error instanceof NotFoundException) throw error;
-      throw new Error(`Ürün sorgulama hatası: ${error.message}`);
+      if (error.response?.status === 404 || error instanceof NotFoundException) {
+        throw new NotFoundException('Ürün kütüphanede bulunamadı.');
+      }
+      this.logger.error(`Barkod servis hatası: ${error.message}`);
+      throw new Error(`Ürün sorgulama sırasında bir sorun oluştu.`);
     }
   }
 
