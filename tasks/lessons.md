@@ -11,5 +11,8 @@
 - **ID Yapısı (CUID2):** Veritabanı ID'lerinde UUID yerine CUID2 kullanılarak hem tahmin edilebilirlik engellendi hem de yatay ölçekleme (scaling) için sağlam bir temel atıldı.
 - **Dockerizasyon:** DB ve Backend'i izole container'larda tutmak, bağımlılık çakışmalarını önledi ve yerel geliştirmeyi hızlandırdı.
 - **Atomic Registration:** Kullanıcı ve profil verilerinin tek bir transaction ile oluşturulması, veritabanı bütünlüğünü korumak için elzemdir.
+<<<<<<< HEAD
 - **Bağımlılık ve İstemci Yönetimi:** Backend projesinde TypeScript hatalarının ana nedeni eksik `node_modules` ve oluşturulmamış (generated) Prisma istemcisi olabilir. Geliştirme ortamında ilk adım olarak `npm install` ve `npx prisma generate` komutlarının çalıştırılması, geliştirme sürecini hızlandırır ve hataların kaynağını doğru tespit etmeyi sağlar.
+=======
+>>>>>>> 0f7393460c8646794544f79c054607f1ee9ab49c
 - **Performans vs Estetik (Blur):** Cam (glassmorphism) efekti için `backdrop-blur-xl` yerine `sm` kullanmak, görsel derinliği korurken 60 FPS akıcılığını sağlamak için kritik bir "Senior" tercihidir.
