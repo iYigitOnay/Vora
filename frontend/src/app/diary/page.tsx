@@ -30,10 +30,10 @@ const MacroDNALine = ({ p, c, f }: { p: number, c: number, f: number }) => {
 const MealQuadrant = ({ type, items, onDelete, onAdd }: any) => {
   const stats = useMemo(() => {
     return items.reduce((acc: any, item: any) => ({
-      cal: acc.cal + Math.round((item.food.calories / 100) * item.amount),
-      p: acc.p + (item.food.protein / 100) * item.amount,
-      c: acc.c + (item.food.carbs / 100) * item.amount,
-      f: acc.f + (item.food.fat / 100) * item.amount,
+      cal: acc.cal + Math.round((item.food?.calories / 100) * item.amount),
+      p: acc.p + (item.food?.protein / 100) * item.amount,
+      c: acc.c + (item.food?.carbs / 100) * item.amount,
+      f: acc.f + (item.food?.fat / 100) * item.amount,
     }), { cal: 0, p: 0, c: 0, f: 0 });
   }, [items]);
 
@@ -60,7 +60,7 @@ const MealQuadrant = ({ type, items, onDelete, onAdd }: any) => {
             items.map((item: any) => (
               <div key={item.id} className="flex items-center justify-between p-3 bg-white/[0.02] border border-white/[0.03] rounded-2xl group/item">
                 <div className="min-w-0">
-                  <p className="text-[9px] font-bold uppercase truncate text-vora-primary">{item.food.name}</p>
+                  <p className="text-[9px] font-bold uppercase truncate text-vora-primary">{item.food?.name || item.customName}</p>
                   <p className="text-[7px] text-vora-tertiary uppercase font-black tracking-widest opacity-40 mt-0.5">{item.amount}g</p>
                 </div>
                 <button onClick={() => onDelete(item.id)} className="p-1.5 opacity-0 group-hover/item:opacity-100 text-red-500/20 hover:text-red-500 transition-all outline-none">
@@ -88,14 +88,14 @@ const ConcentricRings = ({ consumed, targets }: any) => {
   const getPct = (cur: number, target: number) => Math.min((cur / (target || 1)) * 100, 100);
   
   const rings = [
-    { pct: getPct(consumed.calories, targets.calories), color: "var(--color-vora-accent)", size: 160, stroke: 8 },
-    { pct: getPct(consumed.protein, targets.protein), color: "var(--color-vora-primary)", size: 120, stroke: 8 },
-    { pct: getPct(consumed.water, targets.water), color: "var(--color-vora-tertiary)", size: 80, stroke: 8 },
+    { pct: getPct(consumed.calories, targets.calories), color: "var(--color-vora-accent)", size: 150, stroke: 7 },
+    { pct: getPct(consumed.protein, targets.protein), color: "var(--color-vora-primary)", size: 110, stroke: 7 },
+    { pct: getPct(consumed.water, targets.water), color: "var(--color-vora-tertiary)", size: 70, stroke: 7 },
   ];
 
   return (
-    <div className="relative flex items-center justify-center py-6">
-      <svg width="180" height="180" className="transform -rotate-90">
+    <div className="relative flex items-center justify-center py-4">
+      <svg width="160" height="160" className="transform -rotate-90">
         {rings.map((ring, i) => {
           const radius = (ring.size - ring.stroke) / 2;
           const circumference = 2 * Math.PI * radius;
@@ -103,9 +103,9 @@ const ConcentricRings = ({ consumed, targets }: any) => {
           
           return (
             <g key={i}>
-              <circle cx="90" cy="90" r={radius} fill="transparent" stroke="currentColor" strokeWidth={ring.stroke} className="text-white/[0.03]" />
+              <circle cx="80" cy="80" r={radius} fill="transparent" stroke="currentColor" strokeWidth={ring.stroke} className="text-white/[0.03]" />
               <motion.circle 
-                cx="90" cy="90" r={radius} fill="transparent" stroke={ring.color} strokeWidth={ring.stroke} strokeDasharray={circumference}
+                cx="80" cy="80" r={radius} fill="transparent" stroke={ring.color} strokeWidth={ring.stroke} strokeDasharray={circumference}
                 initial={{ strokeDashoffset: circumference }}
                 animate={{ strokeDashoffset: offset }}
                 transition={{ duration: 1.5, delay: i * 0.2, ease: "circOut" }}
@@ -116,8 +116,8 @@ const ConcentricRings = ({ consumed, targets }: any) => {
         })}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <Target className="w-5 h-5 text-vora-accent opacity-20 mb-1" />
-        <span className="text-[10px] font-black text-vora-tertiary uppercase tracking-[0.2em]">Daily</span>
+        <Target className="w-4 h-4 text-vora-accent opacity-20 mb-1" />
+        <span className="text-[8px] font-black text-vora-tertiary uppercase tracking-[0.2em]">DAY</span>
       </div>
     </div>
   );
@@ -126,9 +126,10 @@ const ConcentricRings = ({ consumed, targets }: any) => {
 // --- Main Page ---
 
 export default function DiaryPage() {
-  const { user, dashboard, setDashboard } = useAppStore();
+  const { user } = useAppStore();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [dailyMeals, setDailyMeals] = useState<any[]>([]);
+  const [daySummary, setDaySummary] = useState<any>(null);
   const [activeAction, setActiveAction] = useState<ActionType>(null);
   const [initialMealType, setInitialMealType] = useState<MealType>("BREAKFAST");
 
@@ -140,28 +141,23 @@ export default function DiaryPage() {
 
   const fetchEverything = useCallback(async () => {
     try {
-      const isoDate = selectedDate.toISOString();
+      const dateStr = format(selectedDate, "yyyy-MM-dd");
       const [mealsRes, summaryRes] = await Promise.all([
-        api.get(`/meal/daily?date=${isoDate}`),
-        api.get(`/dashboard/summary?date=${isoDate}`)
+        api.get(`/meal/daily?date=${dateStr}`),
+        api.get(`/dashboard/summary?date=${dateStr}`)
       ]);
       setDailyMeals(mealsRes.data);
-      setDashboard(summaryRes.data); // Store'u güncelleerek Spektrumu yenile
+      setDaySummary(summaryRes.data);
     } catch (err) {
       console.error("Fetch error:", err);
     }
-  }, [selectedDate, setDashboard]);
+  }, [selectedDate]);
 
   useEffect(() => { fetchEverything(); }, [fetchEverything]);
 
   const handleDeleteItem = async (id: string) => {
     await api.delete(`/meal/item/${id}`);
     fetchEverything();
-  };
-
-  const handleAddWithContext = (mealType: MealType) => {
-    setInitialMealType(mealType);
-    setActiveAction("search");
   };
 
   const mealTypes = [
@@ -173,79 +169,80 @@ export default function DiaryPage() {
 
   return (
     <div className="h-[calc(100vh-100px)] flex flex-col overflow-hidden">
-      <DashboardHeader user={user} auraStreak={dashboard?.auraStreak} title="GÜNLÜK LOG" subtitle="PERFORMANS VE ANALİZ MERKEZİ" />
+      <DashboardHeader user={user} auraStreak={daySummary?.auraStreak || 0} title="GÜNLÜK LOG" subtitle="PERFORMANS VE ANALİZ MERKEZİ" />
 
       <div className="flex-1 min-h-0 grid grid-cols-12 gap-8 pb-4">
         <div className="col-span-12 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 grid-rows-2 gap-6 h-full min-h-0">
           {mealTypes.map((type) => (
-            <MealQuadrant key={type.id} type={type} items={dailyMeals.find(m => m.type === type.id)?.items || []} onDelete={handleDeleteItem} onAdd={handleAddWithContext} />
+            <MealQuadrant key={type.id} type={type} items={dailyMeals.find(m => m.type === type.id)?.items || []} onDelete={handleDeleteItem} onAdd={(t:any) => { setInitialMealType(t); setActiveAction("search"); }} />
           ))}
         </div>
 
         <div className="hidden lg:col-span-4 lg:flex flex-col h-full min-h-0">
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 bg-vora-surface border border-white/5 rounded-[3rem] p-8 flex flex-col items-center overflow-hidden h-full">
-            <div className="w-full flex items-center justify-between gap-3 mb-8 shrink-0">
-              <button onClick={() => { setInitialMealType("BREAKFAST"); setActiveAction("search"); }} className="flex-1 flex flex-col items-center gap-2 p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/[0.05] transition-all group outline-none">
-                <Search className="w-4 h-4 text-vora-tertiary group-hover:text-vora-primary" />
-                <span className="text-[7px] font-black text-vora-tertiary uppercase tracking-widest">Arama</span>
-              </button>
-              <button onClick={() => { setInitialMealType("BREAKFAST"); setActiveAction("barcode"); }} className="flex-1 flex flex-col items-center gap-2 p-4 bg-vora-accent/10 border border-vora-accent/20 rounded-2xl hover:bg-vora-accent/20 transition-all group outline-none">
-                <Barcode className="w-4 h-4 text-vora-accent" />
-                <span className="text-[7px] font-black text-vora-accent uppercase tracking-widest">Vision</span>
-              </button>
-              <button onClick={() => setActiveAction("water")} className="flex-1 flex flex-col items-center gap-2 p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/[0.05] transition-all group outline-none">
-                <Droplets className="w-4 h-4 text-vora-tertiary group-hover:text-vora-primary" />
-                <span className="text-[7px] font-black text-vora-tertiary uppercase tracking-widest">Su Ekle</span>
-              </button>
-            </div>
-
-            <h3 className="text-[10px] font-black text-vora-tertiary uppercase tracking-[0.4em] mb-2 opacity-30 shrink-0">GÜNLÜK SPEKTRUM</h3>
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 bg-vora-surface border border-white/5 rounded-[3rem] p-6 flex flex-col items-center overflow-hidden h-full">
             
-            <ConcentricRings 
-              consumed={dashboard?.consumed || { calories: 0, protein: 0, water: 0 }} 
-              targets={dashboard?.targets || { calories: 2000, protein: 150, water: 2500 }} 
-            />
-
-            <div className="w-full space-y-3 mt-4 shrink-0">
-              {[
-                { label: "KALORİ", val: `${Math.round(dashboard?.consumed.calories || 0)}/${dashboard?.targets.calories}`, color: "bg-vora-accent" },
-                { label: "PROTEİN", val: `${Math.round(dashboard?.consumed.protein || 0)}g/${dashboard?.targets.protein}g`, color: "bg-vora-primary" },
-                { label: "SU", val: `${((dashboard?.consumed.water || 0)/1000).toFixed(1)}L/${(dashboard?.targets.water || 0)/1000}L`, color: "bg-vora-tertiary" },
-              ].map((item, i) => (
-                <div key={i} className="flex justify-between items-center p-3.5 bg-white/[0.02] border border-white/[0.03] rounded-2xl">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-1 h-1 rounded-full ${item.color}`} />
-                    <span className="text-[9px] font-black text-vora-tertiary uppercase tracking-widest">{item.label}</span>
-                  </div>
-                  <span className="text-[11px] font-black text-vora-primary tracking-tighter">{item.val}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-auto pt-8 border-t border-white/5 w-full shrink-0">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-3 h-3 text-vora-accent" />
-                  <span className="text-[8px] font-black text-vora-tertiary uppercase tracking-[0.3em]">Zaman Kontrolü</span>
-                </div>
-                <span className="text-[7px] font-bold text-vora-accent/40 uppercase tracking-widest">7 GÜNLÜK HAFIZA</span>
-              </div>
-              
-              <div className="flex items-center justify-between p-2 bg-white/[0.02] border border-white/5 rounded-full">
-                <button disabled={isAtMin} onClick={() => setSelectedDate(subDays(selectedDate, 1))} className={`p-3 rounded-full text-vora-tertiary transition-all outline-none ${isAtMin ? "opacity-10 cursor-not-allowed" : "hover:bg-white/5"}`} >
+            {/* 1. ZAMAN KONTROLÜ */}
+            <div className="w-full mb-6 shrink-0">
+              <div className="flex items-center justify-between p-1.5 bg-white/[0.02] border border-white/5 rounded-full">
+                <button disabled={isAtMin} onClick={() => setSelectedDate(subDays(selectedDate, 1))} className={`p-2.5 rounded-full text-vora-tertiary transition-all ${isAtMin ? "opacity-10" : "hover:bg-white/5"}`} >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <div className="text-center">
-                  <p className="text-[10px] font-black text-vora-primary uppercase tracking-widest leading-none mb-1">
+                  <p className="text-[10px] font-black text-vora-primary uppercase tracking-widest leading-none mb-0.5">
                     {isSameDay(selectedDate, today) ? "BUGÜN" : format(selectedDate, "dd MMMM", { locale: tr })}
                   </p>
-                  <p className="text-[8px] font-bold text-vora-accent uppercase tracking-tighter opacity-60 italic">{format(selectedDate, "EEEE", { locale: tr })}</p>
+                  <p className="text-[7px] font-bold text-vora-accent uppercase tracking-tighter opacity-60 italic">{format(selectedDate, "EEEE", { locale: tr })}</p>
                 </div>
-                <button disabled={isAtMax} onClick={() => setSelectedDate(addDays(selectedDate, 1))} className={`p-3 rounded-full text-vora-tertiary transition-all outline-none ${isAtMax ? "opacity-10 cursor-not-allowed" : "hover:bg-white/5"}`} >
+                <button disabled={isAtMax} onClick={() => setSelectedDate(addDays(selectedDate, 1))} className={`p-2.5 rounded-full text-vora-tertiary transition-all ${isAtMax ? "opacity-10" : "hover:bg-white/5"}`} >
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
+
+            {/* 2. SPEKTRUM (COMPACT) */}
+            <h3 className="text-[9px] font-black text-vora-tertiary uppercase tracking-[0.4em] mb-1 opacity-30 shrink-0">GÜNLÜK SPEKTRUM</h3>
+            
+            {daySummary ? (
+              <ConcentricRings consumed={daySummary.consumed} targets={daySummary.targets} />
+            ) : (
+              <div className="h-[160px] flex items-center justify-center opacity-10"><Activity className="w-10 h-10 animate-spin" /></div>
+            )}
+
+            {/* STATS GRID (FIXED OVERFLOW) */}
+            <div className="w-full grid grid-cols-1 gap-2 mt-2 shrink-0">
+              {[
+                { label: "KCAL", cur: daySummary?.consumed.calories, tar: daySummary?.targets.calories, color: "bg-vora-accent" },
+                { label: "PRO", cur: daySummary?.consumed.protein, tar: daySummary?.targets.protein, color: "bg-vora-primary" },
+                { label: "SU", cur: (daySummary?.consumed.water || 0)/1000, tar: (daySummary?.targets.water || 0)/1000, color: "bg-vora-tertiary", unit: "L" },
+              ].map((item, i) => (
+                <div key={i} className="flex justify-between items-center p-3 bg-white/[0.02] border border-white/[0.03] rounded-2xl">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-1 h-1 rounded-full ${item.color}`} />
+                    <span className="text-[8px] font-black text-vora-tertiary uppercase tracking-widest">{item.label}</span>
+                  </div>
+                  <span className="text-[10px] font-black text-vora-primary tracking-tighter">
+                    {Math.round(item.cur || 0)}{item.unit || "g"} / {Math.round(item.tar || 0)}{item.unit || "g"}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* ACTIONS (COMPACT) */}
+            <div className="mt-auto pt-6 border-t border-white/5 w-full grid grid-cols-3 gap-2 shrink-0">
+              <button onClick={() => { setInitialMealType("BREAKFAST"); setActiveAction("search"); }} className="flex flex-col items-center gap-1.5 p-3 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white/[0.05] transition-all group">
+                <Search className="w-3.5 h-3.5 text-vora-tertiary group-hover:text-vora-primary" />
+                <span className="text-[6px] font-black text-vora-tertiary uppercase tracking-widest">ARA</span>
+              </button>
+              <button onClick={() => { setInitialMealType("BREAKFAST"); setActiveAction("barcode"); }} className="flex flex-col items-center gap-1.5 p-3 bg-vora-accent/10 border border-vora-accent/20 rounded-xl hover:bg-vora-accent/20 transition-all group">
+                <Barcode className="w-3.5 h-3.5 text-vora-accent" />
+                <span className="text-[6px] font-black text-vora-accent uppercase tracking-widest">VISION</span>
+              </button>
+              <button onClick={() => setActiveAction("water")} className="flex flex-col items-center gap-1.5 p-3 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white/[0.05] transition-all group">
+                <Droplets className="w-3.5 h-3.5 text-vora-tertiary group-hover:text-vora-primary" />
+                <span className="text-[6px] font-black text-vora-tertiary uppercase tracking-widest">SU</span>
+              </button>
+            </div>
+
           </motion.div>
         </div>
       </div>

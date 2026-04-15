@@ -8,6 +8,7 @@ import { useAppStore } from "@/store/useAppStore";
 import api from "@/lib/api";
 import AddInventoryModal from "@/components/kitchen/AddInventoryModal";
 import CreateTemplateModal from "@/components/kitchen/CreateTemplateModal";
+import RestockModal from "@/components/kitchen/RestockModal";
 
 const BentoCard = ({ children, className, title, icon: Icon, action }: any) => (
   <motion.div
@@ -35,6 +36,7 @@ export default function KitchenPage() {
   const [activeTab, setActiveTab] = useState<"inventory" | "templates">("inventory");
   const [showAddInventory, setShowAddInventory] = useState(false);
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
+  const [selectedRestockItem, setSelectedRestockItem] = useState<any>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,19 +56,6 @@ export default function KitchenPage() {
     };
     fetchData();
   }, [setInventory, setTemplates, setLoading]);
-
-  const handleQuickRestock = async (item: any) => {
-    try {
-      const addAmount = item.unit === "g" ? 100 : 1;
-      const res = await api.patch(`/inventory/${item.id}`, {
-        quantity: item.quantity + addAmount
-      });
-      // Backend artık include: { food: true } döndüğü için patlama olmaz
-      setInventory(inventory.map(i => i.id === item.id ? res.data : i));
-    } catch (error) {
-      console.error("Hızlı ikmal hatası:", error);
-    }
-  };
 
   const handleDeleteInventory = async (id: string) => {
     try {
@@ -91,7 +80,7 @@ export default function KitchenPage() {
       <DashboardHeader user={user} auraStreak={dashboard?.auraStreak} title="MUTFAĞIM" subtitle="DİJİTAL ASİSTANINIZIN KALBİ" />
 
       {/* Tab Selector */}
-      <div className="flex justify-center mb-8">
+      <div className="flex justify-center mb-8 shrink-0">
         <div className="bg-vora-surface border border-vora-border/10 p-1 rounded-full flex gap-1 shadow-2xl shadow-black/20">
           <button onClick={() => setActiveTab("inventory")} className={`px-8 py-2.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all ${activeTab === "inventory" ? "bg-vora-accent text-white shadow-lg shadow-vora-accent/20" : "text-vora-tertiary hover:text-vora-primary"}`} >
             KİLERİM
@@ -115,7 +104,7 @@ export default function KitchenPage() {
             </button>
           }
         >
-          <div className="h-full overflow-y-auto pr-2 custom-scrollbar space-y-3">
+          <div className="h-full overflow-y-auto pr-2 custom-scrollbar space-y-3 pb-10">
             <AnimatePresence mode="popLayout">
               {activeTab === "inventory" ? (
                 inventory.length > 0 ? (
@@ -129,10 +118,11 @@ export default function KitchenPage() {
                           <h4 className="text-[11px] font-bold text-vora-primary uppercase tracking-wider">{item.food?.name || 'Bilinmeyen Ürün'}</h4>
                           <p className="text-[9px] text-vora-tertiary uppercase tracking-widest">{item.food?.brand || "GENEL"}</p>
                         </div>
-                      </div>                      <div className="flex items-center gap-4">
-                        {/* HIZLI İKMAL BUTONU (KART İÇİNE ALINDI) */}
+                      </div>
+                      <div className="flex items-center gap-4">
+                        {/* HIZLI İKMAL BUTONU (MODALI TETİKLER) */}
                         <button 
-                          onClick={() => handleQuickRestock(item)}
+                          onClick={() => setSelectedRestockItem(item)}
                           className="flex items-center gap-2 px-3 py-1.5 bg-vora-accent/10 border border-vora-accent/20 rounded-xl text-vora-accent hover:bg-vora-accent hover:text-white transition-all opacity-0 group-hover/item:opacity-100"
                         >
                           <Plus className="w-3 h-3" />
@@ -170,7 +160,7 @@ export default function KitchenPage() {
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {template.items.slice(0, 3).map((item: any, idx: number) => (
-                          <span key={idx} className="px-3 py-1 bg-white/[0.03] border border-vora-border/10 rounded-full text-[8px] font-bold text-vora-tertiary uppercase tracking-widest"> {item.food.name} </span>
+                          <span key={idx} className="px-3 py-1 bg-white/[0.03] border border-vora-border/10 rounded-full text-[8px] font-bold text-vora-tertiary uppercase tracking-widest"> {item.food?.name} </span>
                         ))}
                         {template.items.length > 3 && <span className="px-3 py-1 bg-white/[0.03] border border-vora-border/10 rounded-full text-[8px] font-bold text-vora-tertiary uppercase tracking-widest"> +{template.items.length - 3} </span>}
                       </div>
@@ -216,13 +206,20 @@ export default function KitchenPage() {
         </div>
       </div>
 
-      <footer className="mt-4 text-center opacity-20 pb-2">
+      <footer className="mt-4 text-center opacity-20 pb-2 shrink-0">
         <p className="text-[8px] font-medium tracking-[0.2em] uppercase max-w-2xl mx-auto leading-relaxed text-vora-tertiary italic text-vora-accent"> Vora AI // Advanced Kitchen Management System </p>
       </footer>
 
       <AnimatePresence>
         {showAddInventory && <AddInventoryModal onClose={() => setShowAddInventory(false)} onSuccess={() => setShowAddInventory(false)} />}
         {showCreateTemplate && <CreateTemplateModal onClose={() => setShowCreateTemplate(false)} onSuccess={() => setShowCreateTemplate(false)} />}
+        {selectedRestockItem && (
+          <RestockModal 
+            item={selectedRestockItem} 
+            onClose={() => setSelectedRestockItem(null)} 
+            onSuccess={() => setSelectedRestockItem(null)} 
+          />
+        )}
       </AnimatePresence>
     </div>
   );
