@@ -6,6 +6,7 @@ import { DashboardHeader } from "@/components/dashboard/cards/DashboardHeader";
 import { useAppStore } from "@/store/useAppStore";
 import { useThemeStore } from "@/store/useThemeStore";
 import { useRouter } from "next/navigation";
+import api from "@/lib/api";
 
 const BentoCard = ({ children, className, title, icon: Icon }: any) => (
   <motion.div
@@ -26,9 +27,21 @@ const BentoCard = ({ children, className, title, icon: Icon }: any) => (
 );
 
 export default function ProfilePage() {
-  const { user, dashboard, clearAll } = useAppStore();
+  const { user, dashboard, clearAll, setUser } = useAppStore();
   const { theme, setTheme } = useThemeStore();
   const router = useRouter();
+
+  const handlePersonaChange = async (newPersona: any) => {
+    setTheme(newPersona);
+    try {
+      await api.patch('/users/persona', { persona: newPersona });
+      if (user) {
+        setUser({ ...user, persona: newPersona });
+      }
+    } catch (err) {
+      console.error("Persona update error:", err);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("vora_access_token");
@@ -74,8 +87,9 @@ export default function ProfilePage() {
               {['EMBER_MOSS', 'AURA_LIGHT', 'NEURAL_DARK', 'FORGE_MODE'].map((t) => (
                  <button 
                   key={t}
-                  onClick={() => setTheme(t as any)}
-                  className={`w-full aspect-square rounded-2xl border transition-all ${theme === t ? 'border-vora-accent bg-vora-accent/10 shadow-lg' : 'border-vora-border/20 bg-white/[0.02]'}`}
+                  onClick={() => handlePersonaChange(t as any)}
+                  title={t}
+                  className={`w-full aspect-square rounded-2xl border transition-all ${theme === t ? 'border-vora-accent bg-vora-accent/10 shadow-lg shadow-vora-accent/20' : 'border-vora-border/20 bg-white/[0.02] hover:border-vora-accent/40'}`}
                  />
               ))}
            </div>
