@@ -133,63 +133,75 @@ export function BarcodeAction({ onSuccess, initialMealType }: BarcodeActionProps
             </label>
           </motion.div>
         ) : (
-          <motion.div key="step2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col h-full space-y-3 pt-1">
-            <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-vora-tertiary hover:text-vora-primary text-[8px] font-black uppercase tracking-widest shrink-0" >
-              <ChevronLeft className="w-3 h-3" /> GERİ
+          <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full space-y-4 pt-1">
+            <button onClick={() => setStep(1)} className="flex items-center gap-2 text-vora-tertiary hover:text-vora-primary transition-colors text-[9px] font-black uppercase tracking-widest w-fit" >
+              <ChevronLeft className="w-3.5 h-3.5" /> GERİ
             </button>
 
-            <div className="bg-white/[0.03] border border-vora-border/10 rounded-[2rem] p-3 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-vora-accent/10 rounded-xl overflow-hidden border border-vora-accent/10 flex items-center justify-center shrink-0">
-                  {product?.image ? <img src={product.image} className="w-full h-full object-cover" /> : <UtensilsCrossed className="w-5 h-5 text-vora-accent opacity-20" />}
+            <div className="bg-white/[0.03] border border-vora-border/10 rounded-[2.5rem] p-5 flex-1 flex flex-col justify-between overflow-hidden">
+              {/* Product Info */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-vora-accent/10 rounded-2xl overflow-hidden border border-vora-accent/10 flex items-center justify-center shrink-0 shadow-lg">
+                    {product?.image ? <img src={product.image} className="w-full h-full object-cover" /> : <UtensilsCrossed className="w-7 h-7 text-vora-accent opacity-20" />}
+                  </div>
+                  <div className="min-w-0">
+                    <SourceTag status={product?.status} />
+                    <h3 className="text-xl font-black text-vora-primary tracking-tight truncate uppercase leading-tight mt-1">{product?.name}</h3>
+                    <p className="text-[9px] font-bold text-vora-tertiary uppercase tracking-widest opacity-40 truncate">{product?.brand || "Vora Vision"}</p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <SourceTag status={product?.status} />
-                  <h3 className="text-[11px] font-black text-vora-primary tracking-tight truncate uppercase leading-tight">{product?.name}</h3>
+
+                {/* Macro Grid */}
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { l: "KCAL", v: calc(product?.calories), c: "text-vora-primary" },
+                    { l: "PRO", v: calc(product?.protein), c: "text-vora-accent" },
+                    { l: "KRB", v: calc(product?.carbs), c: "text-vora-primary" },
+                    { l: "YAĞ", v: calc(product?.fat), c: "text-vora-primary" },
+                  ].map(m => (
+                    <div key={m.l} className="p-3 bg-white/5 border border-white/5 rounded-xl text-center flex flex-col justify-center shadow-sm">
+                      <p className={`text-base font-black tracking-tighter ${m.c}`}>{m.v}</p>
+                      <p className="text-[7px] font-black text-vora-tertiary uppercase tracking-tighter opacity-40">{m.l}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-1">
-                {[
-                  { l: "KCAL", v: calc(product?.calories) },
-                  { l: "PRO", v: calc(product?.protein) },
-                  { l: "KRB", v: calc(product?.carbs) },
-                  { l: "YAĞ", v: calc(product?.fat) },
-                ].map(m => (
-                  <div key={m.l} className="p-1.5 bg-white/5 border border-white/5 rounded-lg text-center">
-                    <p className="text-[10px] font-black tracking-tighter text-vora-primary">{m.v}</p>
-                    <p className="text-[6px] font-bold text-vora-tertiary uppercase tracking-tighter">{m.l}</p>
+              {/* Amount and Inventory */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-vora-border/10 pb-2 group-focus-within:border-vora-accent transition-all px-1">
+                  <div className="flex-1">
+                    <p className="text-[8px] font-black text-vora-tertiary uppercase tracking-[0.3em] opacity-40">MİKTAR (G)</p>
+                    <input type="text" inputMode="numeric" value={amount} onChange={(e) => handleNumericInput(e.target.value)} className="w-full bg-transparent text-4xl font-black text-vora-primary outline-none tracking-tighter" placeholder="0" />
                   </div>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-between gap-4 px-1">
-                <div className="flex-1">
-                  <p className="text-[7px] font-black text-vora-tertiary uppercase tracking-widest mb-0.5">MİKTAR (G)</p>
-                  <input type="text" inputMode="numeric" value={amount} onChange={(e) => handleNumericInput(e.target.value)} className="w-full bg-transparent text-xl font-black text-vora-primary outline-none tracking-tighter" placeholder="0" />
+                  
+                  <div className="bg-white/[0.02] border border-vora-border/5 rounded-2xl p-3 flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-[9px] font-black text-vora-primary uppercase tracking-tighter">Kiler</p>
+                      <p className="text-[7px] text-vora-tertiary uppercase tracking-tighter opacity-50">Düş</p>
+                    </div>
+                    <button 
+                      onClick={() => setConsumeFromInventory(!consumeFromInventory)} 
+                      className={`w-10 h-6 rounded-full relative transition-all duration-300 ${consumeFromInventory ? "bg-vora-accent" : "bg-white/10"}`}
+                    >
+                      <motion.div animate={{ x: consumeFromInventory ? 18 : 4 }} className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full" />
+                    </button>
+                  </div>
                 </div>
-                <div className="bg-white/[0.02] border border-vora-border/5 rounded-xl p-2 flex items-center gap-3">
-                  <div className="text-right">
-                    <p className="text-[7px] font-bold text-vora-primary uppercase tracking-tighter">Kiler</p>
-                    <p className="text-[6px] text-vora-tertiary uppercase tracking-tighter">Düş</p>
-                  </div>
-                  <button onClick={() => setConsumeFromInventory(!consumeFromInventory)} className={`w-7 h-4 rounded-full relative transition-all ${consumeFromInventory ? "bg-vora-accent" : "bg-white/10"}`}>
-                    <motion.div animate={{ x: consumeFromInventory ? 14 : 2 }} className="absolute top-0.5 left-0 w-3 h-3 bg-white rounded-full shadow-sm" />
-                  </button>
+
+                <div className="grid grid-cols-4 gap-1.5">
+                  {["BREAKFAST", "LUNCH", "DINNER", "SNACK"].map(t => (
+                    <button key={t} onClick={() => setMealType(t as MealType)} className={`py-3 rounded-xl text-[8px] font-black uppercase tracking-widest border transition-all ${mealType === t ? "bg-vora-accent text-vora-on-accent border-vora-accent" : "bg-white/[0.02] border-vora-border/10 text-vora-tertiary"}`} >
+                      {t === "BREAKFAST" ? "Sabah" : t === "LUNCH" ? "Öğle" : t === "DINNER" ? "Akşam" : "Ara"}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-1.5">
-              {["BREAKFAST", "LUNCH", "DINNER", "SNACK"].map(t => (
-                <button key={t} onClick={() => setMealType(t as MealType)} className={`py-2 rounded-lg text-[7px] font-black uppercase tracking-widest border transition-all ${mealType === t ? "bg-vora-accent text-vora-on-accent border-vora-accent" : "bg-white/[0.02] border-vora-border/10 text-vora-tertiary"}`} >
-                  {t.slice(0, 3)}
-                </button>
-              ))}
-            </div>
-
-            <button onClick={handleFinalSubmit} disabled={loading || !amount || Number(amount) <= 0} className="w-full py-3 bg-vora-accent text-vora-on-accent rounded-2xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-vora-accent/10 hover:brightness-110 active:scale-[0.98] transition-all" >
-              {loading ? "..." : "EKLE"}
+            <button onClick={handleFinalSubmit} disabled={loading || !amount || Number(amount) <= 0} className="w-full py-4 bg-vora-accent text-vora-on-accent rounded-[2rem] font-black uppercase tracking-[0.3em] text-[10px] shadow-xl hover:brightness-110 active:scale-[0.98] transition-all shrink-0" >
+              {loading ? "İŞLENİYOR..." : "ÖĞÜNÜ KAYDET"}
             </button>
           </motion.div>
         )}
