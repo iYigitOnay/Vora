@@ -26,11 +26,8 @@ export class MealService {
     return this.prisma.$transaction(async (tx) => {
       const finalFoodId = data.foodId;
 
-      // ... (Food creation logic remains same)
-
       if (!finalFoodId) throw new BadRequestException('Besin bilgisi eksik.');
 
-      // 1. O gün için bu tipte bir Meal var mı bak
       let meal = await tx.meal.findFirst({
         where: {
           userId,
@@ -45,7 +42,6 @@ export class MealService {
         });
       }
 
-      // 2. Kiler (Inventory) Stok Düşüm Mantığı
       let deducted = false;
       if (data.consumeFromInventory) {
         const inventoryItem = await tx.inventory.findFirst({
@@ -61,7 +57,6 @@ export class MealService {
         }
       }
 
-      // 3. MealItem'ı ekle
       return tx.mealItem.create({
         data: {
           mealId: meal.id,
@@ -111,7 +106,6 @@ export class MealService {
 
     const logDate = data.date ? new Date(data.date) : new Date();
 
-    // Her bir item için logMeal mantığını çalıştır (Transaction içinde)
     return this.prisma.$transaction(async (tx) => {
       const startOfDay = new Date(logDate);
       startOfDay.setHours(0, 0, 0, 0);
@@ -147,6 +141,51 @@ export class MealService {
   async logWater(userId: string, amount: number) {
     return this.prisma.waterLog.create({
       data: { userId, amount },
+    });
+  }
+
+  async logManualMeal(userId: string, data: any) {
+    return this.prisma.$transaction(async (tx) => {
+      const food = await tx.food.create({
+        data: {
+          name: data.name,
+          brand: data.brand || null,
+          calories: Number(data.calories),
+          protein: Number(data.protein) || 0,
+          carbs: Number(data.carbs) || 0,
+          fat: Number(data.fat) || 0,
+          status: FoodStatus.PRIVATE,
+          creatorId: userId,
+        },
+      });
+
+      const logDate = new Date();
+      const startOfDay = new Date(logDate.setHours(0, 0, 0, 0));
+      const endOfDay = new Date(logDate.setHours(23, 59, 59, 999));
+
+      let meal = await tx.meal.findFirst({
+        where: {
+          userId,
+          type: data.type,
+          date: { gte: startOfDay, lte: endOfDay },
+        },
+      });
+
+      if (!meal) {
+        meal = await tx.meal.create({
+          data: { userId, type: data.type, date: new Date() },
+        });
+      }
+
+      return tx.mealItem.create({
+        data: {
+          mealId: meal.id,
+          foodId: food.id,
+          amount: Number(data.amount),
+          deductedFromInventory: data.consumeFromInventory || false,
+        },
+        include: { food: true },
+      });
     });
   }
 }

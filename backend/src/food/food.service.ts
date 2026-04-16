@@ -1,7 +1,9 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import axios from 'axios';
 import { FoodStatus } from '@prisma/client';
+import * as Jimp from 'jimp';
+import barcodeReader from 'javascript-barcode-reader';
 
 @Injectable()
 export class FoodService {
@@ -10,13 +12,11 @@ export class FoodService {
   constructor(private prisma: PrismaService) {}
 
   async scanBarcode(barcode: string, userId: string) {
-    // 1. Önce kendi DB'mizde resmi veri var mı bak
     const existing = await this.prisma.food.findUnique({
       where: { barcode },
     });
 
     if (existing) {
-      // Katı Gizlilik: Eğer ürün PRIVATE ise ve taratan kişi creator değilse, DB'dekini YOK SAY.
       if (
         existing.status === FoodStatus.PRIVATE &&
         existing.creatorId !== userId
@@ -29,7 +29,6 @@ export class FoodService {
       }
     }
 
-    // 2. Yoksa dış API'den çek ve VERIFIED olarak kaydet
     try {
       const response = await axios.get(
         `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`,
@@ -46,28 +45,79 @@ export class FoodService {
         name: product.product_name || 'Bilinmeyen Ürün',
         brand: product.brands || '',
         calories: Number(nutriments['energy-kcal_100g']) || 0,
-        protein:
-          Number(nutriments.proteins_100g) ||
-          Number(nutriments.protein_100g) ||
-          0,
+        protein: Number(nutriments.proteins_100g) || Number(nutriments.protein_100g) || 0,
         carbs: Number(nutriments.carbohydrates_100g) || 0,
         fat: Number(nutriments.fat_100g) || 0,
         defaultAmount: Number(product.product_quantity) || 100,
         barcode: barcode,
         image: product.image_url || '',
-        status: FoodStatus.VERIFIED, // RESMİ VERİ
+        status: FoodStatus.VERIFIED,
         creatorId: userId,
       };
 
-      return await this.prisma.food.create({ data: foodData });
+      return await this.prisma.food.upsert({
+        where: { barcode: barcode },
+        update: foodData,
+        create: foodData,
+      });
     } catch (error) {
-      if (
-        error.response?.status === 404 ||
-        error instanceof NotFoundException
-      ) {
+      if (error.response?.status === 404 || error instanceof NotFoundException) {
         throw new NotFoundException('Ürün kütüphanede bulunamadı.');
       }
       throw new Error(`Ürün sorgulama sırasında bir sorun oluştu.`);
+    }
+  }
+
+  async analyzeImage(file: any, userId: string) {
+    if (!file) throw new BadRequestException('Görsel dosyası eksik.');
+
+    try {
+      // 1. Görseli Jimp ile oku
+      const image = await Jimp.read(file.buffer);
+      
+      // 2. Profesyonel Önişleme (Thresholding Barkod için hayat kurtarır)
+      // Resmi gri yap, kontrastı artır ve 1000px genişliğe sabitle (daha hızlı ve doğru analiz için)
+      if (image.bitmap.width > 1000) {
+        image.resize(1000, Jimp.AUTO);
+      }
+      
+      image.grayscale().contrast(0.5).normalize();
+
+      // 3. Barkodu tüm formatlarda tara
+      const result = await (barcodeReader as any)({
+        image: image.bitmap.data,
+        width: image.bitmap.width,
+        height: image.bitmap.height,
+        barcode: 'all', // Tüm standartları dene (EAN, UPC, Code128 vb.)
+        options: {
+          useBoxDetection: true, // Barkodun etrafındaki kutuyu bulmaya çalış
+        }
+      });
+
+      if (!result) {
+        // Eğer ilk denemede bulamadıysa, resmi biraz daha keskinleştirip tekrar dene (Fallback)
+        image.contrast(0.8).posterize(2); 
+        const retryResult = await (barcodeReader as any)({
+          image: image.bitmap.data,
+          width: image.bitmap.width,
+          height: image.bitmap.height,
+          barcode: 'all'
+        });
+
+        if (!retryResult) {
+          throw new NotFoundException('Görselde geçerli bir barkod tanımlanamadı.');
+        }
+        return await this.scanBarcode(retryResult, userId);
+      }
+
+      this.logger.log(`Barkod başarıyla okundu: ${result}`);
+
+      // 4. Bulunan barkodu mevcut scanBarcode sistemiyle sorgula
+      return await this.scanBarcode(result, userId);
+    } catch (error) {
+      this.logger.error(`Vision Engine Hatası: ${error.message}`);
+      if (error instanceof NotFoundException) throw error;
+      throw new BadRequestException('Fotoğraf analiz edilirken bir hata oluştu veya barkod okunamadı.');
     }
   }
 
@@ -83,9 +133,9 @@ export class FoodService {
           },
           {
             OR: [
-              { status: FoodStatus.VERIFIED }, // Resmi verileri herkes görür
-              { status: FoodStatus.COMMUNITY }, // Topluluk verilerini herkes görür
-              { AND: [{ status: FoodStatus.PRIVATE }, { creatorId: userId }] }, // Özelleri SADECE sahibi görür
+              { status: FoodStatus.VERIFIED },
+              { status: FoodStatus.COMMUNITY },
+              { AND: [{ status: FoodStatus.PRIVATE }, { creatorId: userId }] },
             ],
           },
         ],
@@ -106,7 +156,7 @@ export class FoodService {
         fat: Number(data.fat),
         defaultAmount: Number(data.defaultAmount) || 100,
         creatorId: userId,
-        status: FoodStatus.PRIVATE, // MANUEL GİRİŞ ÖZELDİR
+        status: FoodStatus.PRIVATE,
       },
     });
   }

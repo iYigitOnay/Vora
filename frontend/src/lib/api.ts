@@ -10,6 +10,7 @@ const api = axios.create({
 // İstek Interceptor'ı: Her isteğe token ekle
 api.interceptors.request.use((config) => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('vora_access_token') : null;
+  console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, token ? 'Token: OK' : 'No Token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -21,11 +22,13 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    console.log(`[API Response Error] ${error.response?.status} from ${originalRequest?.url}`);
 
     // Eğer hata 401 ise ve daha önce bu istek için yenileme denenmediyse
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-
+      console.log('[API Auth] Attempting token refresh...');
+      
       const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('vora_refresh_token') : null;
       const userId = typeof window !== 'undefined' ? localStorage.getItem('vora_user_id') : null;
 

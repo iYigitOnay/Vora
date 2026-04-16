@@ -41,8 +41,14 @@ export function ManualAction({ onSuccess, initialMealType }: ManualActionProps) 
   };
 
   const handleNextStep = () => {
-    if (step === 1 && !form.name) return;
-    if (step === 2 && !form.calories) return;
+    if (step === 1 && !form.name) {
+      notify.show("Lütfen besin adını girin.", "error");
+      return;
+    }
+    if (step === 2 && (!form.calories || Number(form.calories) <= 0)) {
+      notify.show("Lütfen kalori değerini girin.", "error");
+      return;
+    }
     setStep(step + 1);
   };
 

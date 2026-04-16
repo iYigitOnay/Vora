@@ -49,7 +49,13 @@ export class MealController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('water')
+  @Post('manual')
+  logManualMeal(@Request() req, @Body() data: any) {
+    return this.mealService.logManualMeal(req.user.userId, data);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('log-water')
   logWater(@Request() req, @Body('amount') amount: number) {
     return this.mealService.logWater(req.user.userId, amount);
   }

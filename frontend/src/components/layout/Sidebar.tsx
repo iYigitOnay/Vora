@@ -59,6 +59,7 @@ export function Sidebar() {
             alt="Vora"
             width={45}
             height={45}
+            style={{ height: 'auto' }}
             className="opacity-90"
           />
         </div>

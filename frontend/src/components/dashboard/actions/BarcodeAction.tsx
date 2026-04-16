@@ -95,37 +95,36 @@ export function BarcodeAction({ onSuccess, initialMealType }: BarcodeActionProps
   const calc = (base: number) => Math.round((base / 100) * (Number(amount) || 0));
 
   return (
-    <div className="flex flex-col h-full overflow-hidden p-2">
+    <div className="flex flex-col h-full overflow-hidden p-4">
       <AnimatePresence mode="wait">
         {step === 1 ? (
-          <motion.div key="step1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col justify-center space-y-6">
+          <motion.div key="step1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col justify-center space-y-10">
             {showScanner ? (
               <div className="relative">
-                <div id="reader" className="overflow-hidden rounded-[2rem] border-2 border-vora-accent/20" />
-                <button onClick={() => setShowScanner(false)} className="absolute -top-2 -right-2 p-2 bg-vora-surface border border-vora-border/20 rounded-full text-vora-tertiary z-10"><X className="w-3 h-3" /></button>
+                <div id="reader" className="overflow-hidden rounded-[2.5rem] border-2 border-vora-accent/20" />
+                <button onClick={() => setShowScanner(false)} className="absolute -top-2 -right-2 p-3 bg-vora-surface border border-vora-border/20 rounded-full text-vora-tertiary z-10 shadow-xl"><X className="w-4 h-4" /></button>
               </div>
             ) : (
-              <button onClick={() => setShowScanner(true)} className="w-full p-5 bg-vora-accent text-vora-on-accent rounded-3xl flex items-center justify-between hover:brightness-110 transition-all shadow-lg shadow-vora-accent/10">
-                <div className="flex items-center gap-4">
-                  <Camera className="w-6 h-6" />
-                  <div className="text-left">
-                    <span className="font-black uppercase tracking-widest text-[10px]">Vizyonu Başlat</span>
-                  </div>
+              <button onClick={() => setShowScanner(true)} className="w-full p-8 bg-vora-accent text-vora-on-accent rounded-[2.5rem] flex flex-col items-center gap-4 hover:brightness-110 transition-all shadow-2xl shadow-vora-accent/20 active:scale-[0.98]">
+                <Camera className="w-10 h-10" />
+                <div className="text-center">
+                  <span className="font-black uppercase tracking-[0.4em] text-[12px]">Vizyonu Başlat</span>
+                  <p className="text-[8px] opacity-40 font-bold tracking-[0.2em] mt-1">Barkod Tara veya Analiz Et</p>
                 </div>
-                <ChevronRight className="w-4 h-4 opacity-50" />
               </button>
             )}
 
             <div className="relative group px-2">
-              <input type="text" autoFocus value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="BARKOD NO..." className="w-full bg-transparent border-b border-vora-border/20 py-2 outline-none text-xl font-black tracking-tighter text-vora-primary placeholder:opacity-10 uppercase focus:border-vora-accent transition-all" onKeyDown={(e) => e.key === 'Enter' && handleBarcodeSearch()} />
-              <button onClick={() => handleBarcodeSearch()} className="absolute right-2 top-1/2 -translate-y-1/2 text-vora-accent">{loading ? "..." : <ChevronRight className="w-5 h-5" />}</button>
+              <label className="block text-[10px] font-black text-vora-tertiary uppercase tracking-[0.4em] mb-4 opacity-30 group-focus-within:text-vora-accent transition-all">Manuel Barkod</label>
+              <input type="text" autoFocus value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="BARKOD..." className="w-full bg-transparent border-b border-vora-border/20 py-4 outline-none text-3xl font-black tracking-[0.2em] text-vora-primary placeholder:opacity-5 uppercase focus:border-vora-accent transition-all" onKeyDown={(e) => e.key === 'Enter' && handleBarcodeSearch()} />
+              <button onClick={() => handleBarcodeSearch()} className="absolute right-2 bottom-4 text-vora-accent">{loading ? "..." : <ChevronRight className="w-8 h-8" />}</button>
             </div>
 
             <label className="block w-full cursor-pointer group px-2">
               <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
-              <div className="py-4 bg-white/[0.01] border border-dashed border-white/10 rounded-2xl flex items-center justify-center gap-3 hover:bg-white/[0.03] transition-all">
-                <Upload className="w-4 h-4 text-vora-tertiary" />
-                <p className="text-[8px] font-black text-vora-tertiary uppercase tracking-widest">Fotoğraf Yükle</p>
+              <div className="py-6 bg-white/[0.01] border border-dashed border-white/10 rounded-3xl flex items-center justify-center gap-4 hover:bg-white/[0.03] transition-all hover:border-vora-accent/40">
+                <Upload className="w-5 h-5 text-vora-tertiary group-hover:text-vora-accent transition-colors" />
+                <p className="text-[10px] font-black text-vora-tertiary uppercase tracking-widest group-hover:text-vora-accent transition-colors">Fotoğraf Analizi</p>
               </div>
             </label>
           </motion.div>

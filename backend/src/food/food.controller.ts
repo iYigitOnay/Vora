@@ -7,7 +7,10 @@ import {
   Body,
   UseGuards,
   Request,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { FoodService } from './food.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -31,5 +34,12 @@ export class FoodController {
   @Post('manual')
   createManual(@Body() data: any, @Request() req) {
     return this.foodService.createManual(data, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('vision')
+  @UseInterceptors(FileInterceptor('image'))
+  analyzeImage(@UploadedFile() file: any, @Request() req) {
+    return this.foodService.analyzeImage(file, req.user.userId);
   }
 }
