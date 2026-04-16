@@ -321,6 +321,7 @@ export default function AuthPage() {
                 setStep(1); 
                 setError(null); 
                 setVerificationMode(false);
+                setForgotPasswordMode(false); // Bu satırı ekledik
                 setOtp(['', '', '', '', '', '']);
                 localStorage.removeItem('vora_pending_verification');
               }}

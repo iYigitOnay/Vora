@@ -69,7 +69,7 @@ export class AuthService {
     // Mail gönderimi (Asenkron - kullanıcı bekletilmemeli)
     console.log(`[DEBUG] Verification code for ${user.email}: ${verificationCode}`);
     this.mailService
-      .sendVerificationEmail(user.email, verificationCode)
+      .sendVerificationEmail(user.email, verificationCode, dto.selectedPersona)
       .catch((err) => {
         console.error('Mail gönderilemedi ama kullanıcı oluşturuldu:', err);
       });
@@ -139,6 +139,7 @@ export class AuthService {
   async resendVerificationCode(email: string) {
     const user = await this.prisma.user.findUnique({
       where: { email },
+      include: { profile: true },
     });
 
     if (!user) throw new UnauthorizedException('Kullanıcı bulunamadı.');
@@ -160,7 +161,7 @@ export class AuthService {
 
     // Mail gönderimi (Asenkron - kullanıcı bekletilmemeli)
     this.mailService
-      .sendVerificationEmail(email, verificationCode)
+      .sendVerificationEmail(email, verificationCode, user.profile?.selectedPersona)
       .catch((err) => {
         console.error('Yeni mail gönderilemedi:', err.message);
       });
@@ -171,6 +172,7 @@ export class AuthService {
   async forgotPassword(email: string) {
     const user = await this.prisma.user.findUnique({
       where: { email },
+      include: { profile: true },
     });
 
     if (!user)
@@ -185,7 +187,12 @@ export class AuthService {
       data: { resetPasswordCode: resetCode, codeExpiresAt: expiresAt },
     });
 
-    await this.mailService.sendPasswordResetEmail(email, resetCode);
+    this.mailService
+      .sendPasswordResetEmail(email, resetCode, user.profile?.selectedPersona)
+      .catch((err) => {
+        console.error('Sıfırlama maili gönderilemedi:', err.message);
+      });
+
     return { message: 'Şifre sıfırlama kodu gönderildi.' };
   }
 
