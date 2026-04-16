@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ChevronLeft, Flame, Target, Droplets, Scale, Home, Utensils } from "lucide-react";
+import { ChevronRight, ChevronLeft, Flame, Target, Droplets, Scale, Home, Utensils, User } from "lucide-react";
 import api from "@/lib/api";
 import { useNotificationStore } from "@/store/useNotificationStore";
 import { useAppStore } from "@/store/useAppStore";
@@ -80,7 +80,14 @@ export function ManualAction({ onSuccess, initialMealType }: ManualActionProps) 
       <div className="flex-1 flex flex-col justify-center">
         <AnimatePresence mode="wait">
           {step === 1 ? (
-            <motion.div key="s1" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-16">
+            <motion.div key="s1" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-12">
+              <div className="bg-vora-accent/5 border border-vora-accent/10 rounded-2xl p-4 flex items-start gap-4 mb-8">
+                <User className="w-5 h-5 text-vora-accent shrink-0 mt-0.5" />
+                <p className="text-[10px] font-medium text-vora-accent/80 leading-relaxed uppercase tracking-tight">
+                  Oluşturduğun bu besin sadece senin <span className="font-black text-vora-accent">şahsi kütüphanene</span> eklenecektir. Diğer kullanıcılar bu veriyi göremez ve arayamaz.
+                </p>
+              </div>
+
               <div className="space-y-12">
                 <div className="relative group">
                   <label className="text-[10px] font-black text-vora-tertiary uppercase tracking-[0.4em] mb-4 block opacity-30 group-focus-within:text-vora-accent transition-colors">Besin Adı</label>

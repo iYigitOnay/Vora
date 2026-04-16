@@ -12,17 +12,43 @@ interface SearchActionProps {
   initialMealType?: string;
 }
 
-const SourceTag = ({ isGlobal }: { isGlobal: boolean }) => {
-  if (!isGlobal) return (
-    <div className="flex items-center gap-1 text-[7px] font-black text-vora-secondary tracking-widest uppercase bg-vora-secondary/5 px-2 py-0.5 rounded-full border border-vora-secondary/10 mt-1">
-      <User className="w-2.5 h-2.5" /> SENİN ÖZEL TARİFİN
+const SourceTag = ({ status }: { status: string }) => {
+  if (status === 'VERIFIED') return (
+    <div className="flex items-center gap-1.5 text-[7px] font-black text-vora-success tracking-widest uppercase bg-vora-success/5 px-2.5 py-1 rounded-full border border-vora-success/10 mt-1">
+      <ShieldCheck className="w-2.5 h-2.5" /> VELA BARKOD
+    </div>
+  );
+  if (status === 'PRIVATE') return (
+    <div className="flex items-center gap-1.5 text-[7px] font-black text-vora-accent tracking-widest uppercase bg-vora-accent/5 px-2.5 py-1 rounded-full border border-vora-accent/10 mt-1">
+      <User className="w-2.5 h-2.5" /> SENİN TARİFİN
     </div>
   );
   return (
-    <div className="flex items-center gap-1 text-[7px] font-bold text-vora-accent tracking-widest uppercase bg-vora-accent/5 px-2 py-0.5 rounded-full border border-vora-accent/10 mt-1">
-      <ShieldCheck className="w-2.5 h-2.5" /> VORA GENEL KÜTÜPHANE
+    <div className="flex items-center gap-1.5 text-[7px] font-bold text-vora-tertiary tracking-widest uppercase bg-white/5 px-2.5 py-1 rounded-full border border-white/10 mt-1">
+      <Utensils className="w-2.5 h-2.5" /> TOPLULUK VERİSİ
     </div>
   );
+};
+
+// ... (Step 2 içindeki selectedFood başlık kısmından sonra eklenecek bilgilendirme bölümü)
+const InfoNotice = ({ status }: { status: string }) => {
+  if (status === 'VERIFIED') return (
+    <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="mt-4 p-3 bg-vora-success/5 border border-vora-success/10 rounded-xl flex items-start gap-3">
+      <ShieldCheck className="w-4 h-4 text-vora-success shrink-0 mt-0.5" />
+      <p className="text-[9px] font-medium text-vora-success/80 leading-relaxed uppercase tracking-tight">
+        Bu besin verileri Vora Kütüphanesi tarafından doğrulanmıştır. <span className="font-black text-vora-success">Resmi barkod verisidir</span> ve besin değerleri değiştirilemez.
+      </p>
+    </motion.div>
+  );
+  if (status === 'PRIVATE') return (
+    <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="mt-4 p-3 bg-vora-accent/5 border border-vora-accent/10 rounded-xl flex items-start gap-3">
+      <User className="w-4 h-4 text-vora-accent shrink-0 mt-0.5" />
+      <p className="text-[9px] font-medium text-vora-accent/80 leading-relaxed uppercase tracking-tight">
+        Bu senin <span className="font-black text-vora-accent">şahsi tarifindir</span>. Sadece senin kütüphanende görünür ve başkaları tarafından aranamaz.
+      </p>
+    </motion.div>
+  );
+  return null;
 };
 
 export function SearchAction({ onSuccess, initialMealType }: SearchActionProps) {
@@ -116,7 +142,7 @@ export function SearchAction({ onSuccess, initialMealType }: SearchActionProps) 
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-black text-vora-primary tracking-tight truncate leading-tight uppercase">{food.name}</p>
-                        <SourceTag isGlobal={food.isGlobal} />
+                        <SourceTag status={food.status} />
                       </div>
                     </div>
                     <ChevronRight className="w-4 h-4 text-vora-tertiary group-hover:text-vora-accent transition-all shrink-0" />
@@ -142,10 +168,12 @@ export function SearchAction({ onSuccess, initialMealType }: SearchActionProps) 
                   <Utensils className="w-5 h-5 text-vora-accent" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <SourceTag isGlobal={selectedFood.isGlobal} />
+                  <SourceTag status={selectedFood.status} />
                   <h3 className="text-lg font-black text-vora-primary tracking-tighter truncate uppercase mt-0.5">{selectedFood.name}</h3>
                 </div>
               </div>
+
+              <InfoNotice status={selectedFood.status} />
 
               <div className="grid grid-cols-4 gap-2">
                 {[

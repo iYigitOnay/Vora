@@ -10,19 +10,21 @@ export class FoodService {
   constructor(private prisma: PrismaService) {}
 
   async scanBarcode(barcode: string, userId: string) {
-    const existingFood = await this.prisma.food.findUnique({
+    // 1. Önce kendi DB'mizde resmi veri var mı bak
+    const existing = await this.prisma.food.findUnique({
       where: { barcode },
     });
 
-    if (existingFood) {
-      // Senior Fix: Katı Gizlilik. Eğer ürün PRIVATE ise ve taratan kişi creator değilse, DB'dekini YOK SAY.
-      if (existingFood.status === FoodStatus.PRIVATE && existingFood.creatorId !== userId) {
+    if (existing) {
+      // Katı Gizlilik: Eğer ürün PRIVATE ise ve taratan kişi creator değilse, DB'dekini YOK SAY.
+      if (existing.status === FoodStatus.PRIVATE && existing.creatorId !== userId) {
         this.logger.warn(`Gizli ürüne (PRIVATE) yetkisiz barkod erişimi engellendi: ${barcode}`);
       } else {
-        return existingFood;
+        return existing;
       }
     }
 
+    // 2. Yoksa dış API'den çek ve VERIFIED olarak kaydet
     try {
       const response = await axios.get(
         `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`
@@ -45,20 +47,15 @@ export class FoodService {
         defaultAmount: Number(product.product_quantity) || 100,
         barcode: barcode,
         image: product.image_url || '',
-        status: FoodStatus.COMMUNITY,
+        status: FoodStatus.VERIFIED, // RESMİ VERİ
         creatorId: userId,
       };
 
-      return await this.prisma.food.upsert({
-        where: { barcode },
-        update: foodData,
-        create: foodData,
-      });
+      return await this.prisma.food.create({ data: foodData });
     } catch (error) {
       if (error.response?.status === 404 || error instanceof NotFoundException) {
         throw new NotFoundException('Ürün kütüphanede bulunamadı.');
       }
-      this.logger.error(`Barkod servis hatası: ${error.message}`);
       throw new Error(`Ürün sorgulama sırasında bir sorun oluştu.`);
     }
   }
@@ -75,15 +72,15 @@ export class FoodService {
           },
           {
             OR: [
-              { status: FoodStatus.VERIFIED },
-              { status: FoodStatus.COMMUNITY },
-              { AND: [{ status: FoodStatus.PRIVATE }, { creatorId: userId }] }
-            ]
-          }
-        ]
+              { status: FoodStatus.VERIFIED }, // Resmi verileri herkes görür
+              { status: FoodStatus.COMMUNITY }, // Topluluk verilerini herkes görür
+              { AND: [{ status: FoodStatus.PRIVATE }, { creatorId: userId }] }, // Özelleri SADECE sahibi görür
+            ],
+          },
+        ],
       },
       take: 20,
-      orderBy: { status: 'asc' }
+      orderBy: { status: 'asc' },
     });
   }
 
@@ -98,7 +95,7 @@ export class FoodService {
         fat: Number(data.fat),
         defaultAmount: Number(data.defaultAmount) || 100,
         creatorId: userId,
-        status: FoodStatus.PRIVATE, 
+        status: FoodStatus.PRIVATE, // MANUEL GİRİŞ ÖZELDİR
       },
     });
   }

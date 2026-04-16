@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import { Controller, Get, Request, UseGuards, Query } from '@nestjs/common';
-=======
-import { Controller, Get, Request, UseGuards } from '@nestjs/common';
->>>>>>> 0f7393460c8646794544f79c054607f1ee9ab49c
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 

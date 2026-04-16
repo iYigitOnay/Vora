@@ -62,7 +62,8 @@ export default function HomePage() {
   useEffect(() => {
     fetch("/moody-wolf.json")
       .then((res) => res.json())
-      .then((d) => setLottieData(d));
+      .then((d) => setLottieData(d))
+      .catch((err) => console.error("Lottie yüklenemedi:", err));
     
     fetchSummary();
     
@@ -70,7 +71,8 @@ export default function HomePage() {
       "https://api.open-meteo.com/v1/forecast?latitude=41.0082&longitude=28.9784&current_weather=true",
     )
       .then((res) => res.json())
-      .then((d) => setWeather(d.current_weather));
+      .then((d) => setWeather(d.current_weather))
+      .catch((err) => console.error("Hava durumu alınamadı:", err));
   }, [fetchSummary]);
 
   if (loading && !dashboard) {

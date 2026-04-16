@@ -19,7 +19,7 @@ services:
     container_name: vora-backend
     restart: always
     ports:
-      - "3001:3001"
+      - "3002:3002"
     environment:
       DATABASE_URL: postgresql://${DB_USER:-vorauser}:${DB_PASSWORD:-vorapass123}@vora-db:5432/${DB_NAME:-voradb}?schema=public
       JWT_SECRET: ${JWT_SECRET:-super-secret-vora-key-2026}

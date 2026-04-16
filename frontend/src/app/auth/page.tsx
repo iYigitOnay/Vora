@@ -152,7 +152,7 @@ export default function AuthPage() {
         >
           <div className="flex flex-col items-center">
             <motion.div whileHover={{ scale: 1.02 }}>
-              <Image src="/vorakurt.png" alt="Vora" width={145} height={145} className="mb-10 drop-shadow-2xl opacity-95" />
+              <Image src="/vorakurt.png" alt="Vora" width={145} height={145} style={{ height: 'auto' }} className="mb-10 drop-shadow-2xl opacity-95" />
             </motion.div>
             <h1 className="text-4xl font-light tracking-[0.6em] mb-4 pl-[0.6em]">VORA</h1>
             <div className="h-[1px] w-12 bg-vora-accent/30 mb-8" />
@@ -277,7 +277,7 @@ export default function AuthPage() {
                           <h2 className="text-xl font-light tracking-[0.3em] uppercase">TEMPO</h2>
                           <p className="text-vora-tertiary text-[8px] tracking-[0.2em] uppercase opacity-50 font-bold italic">Günlük enerjin nasıl?</p>
                         </div>
-                        <div className="space-y-3 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
+                        <div className="space-y-3">
                           {[
                             { id: 'SEDENTARY', l: 'Minimalist', d: 'Masa başı iş, az hareket alanı.' },
                             { id: 'LIGHTLY_ACTIVE', l: 'Dengeli', d: 'Kısa yürüyüşler, hafif egzersiz.' },
