@@ -102,7 +102,10 @@ export class AuthService {
 
     const tokens = await this.generateTokens(user.id, user.email);
     await this.updateRefreshToken(user.id, tokens.refresh_token);
-    return tokens;
+    return {
+      userId: user.id,
+      ...tokens,
+    };
   }
 
   async verifyEmail(email: string, code: string) {
@@ -132,6 +135,7 @@ export class AuthService {
 
     return {
       message: 'E-posta başarıyla doğrulandı.',
+      userId: user.id,
       ...tokens,
     };
   }
