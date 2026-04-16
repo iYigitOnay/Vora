@@ -40,6 +40,11 @@ export class FoodController {
   @Post('vision')
   @UseInterceptors(FileInterceptor('image'))
   analyzeImage(@UploadedFile() file: any, @Request() req) {
+    if (!file) {
+      console.error('❌ NO FILE RECEIVED in FoodController');
+    } else {
+      console.log('✅ File received:', file.originalname, file.size, 'bytes');
+    }
     return this.foodService.analyzeImage(file, req.user.userId);
   }
 }

@@ -53,11 +53,15 @@ export function BarcodeAction({ onSuccess, initialMealType }: BarcodeActionProps
     try {
       const formData = new FormData();
       formData.append('image', file);
+      
       const res = await api.post('/food/vision', formData);
+      
       setProduct(res.data);
       setStep(2);
-    } catch (err) {
-      notify.show("Fotoğraf analiz edilemedi.", "error");
+      notify.show("Fotoğraf başarıyla analiz edildi.", "success");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Fotoğraf analiz edilemedi.";
+      notify.show(msg, "error");
     } finally {
       setLoading(false);
     }
