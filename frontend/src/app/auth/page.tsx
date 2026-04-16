@@ -11,25 +11,52 @@ import { ActivityLevel, Gender, Goal } from '@/types/auth';
 import { 
   Flame, Zap, Sparkles, 
   Mail, Lock, User, Ruler, Weight, Target, Calendar,
-  ChevronRight, ChevronLeft, Droplets, Leaf, Check, AlertCircle
+  ChevronRight, ChevronLeft, Droplets, Leaf, Check, AlertCircle,
+  Eye, EyeOff
 } from 'lucide-react';
 
 // Soft Underlined Input Component
-const UnderlinedInput = ({ label, icon: Icon, ...props }: any) => (
-  <div className="group relative w-full mb-6">
-    <label className="block text-[9px] font-bold text-vora-tertiary mb-1 uppercase tracking-[0.2em] opacity-60 group-focus-within:text-vora-accent transition-colors">
-      {label}
-    </label>
-    <div className="relative flex items-center">
-      {Icon && <Icon className="absolute left-0 w-3.5 h-3.5 text-vora-tertiary opacity-30 group-focus-within:text-vora-accent transition-colors" />}
-      <input
-        {...props}
-        autoComplete="off"
-        className={`w-full bg-transparent border-b border-vora-border/40 py-2.5 ${Icon ? 'pl-7' : 'pl-0'} focus:border-vora-accent outline-none transition-all text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-vora-primary`}
-      />
+const UnderlinedInput = ({ label, icon: Icon, type, ...props }: any) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === 'password';
+
+  return (
+    <div className="group relative w-full mb-6">
+      <label className="block text-[9px] font-bold text-vora-tertiary mb-1 uppercase tracking-[0.2em] opacity-60 group-focus-within:text-vora-accent transition-colors">
+        {label}
+      </label>
+      <div className="relative flex items-center">
+        {Icon && <Icon className="absolute left-0 w-3.5 h-3.5 text-vora-tertiary opacity-30 group-focus-within:text-vora-accent transition-colors" />}
+        <input
+          {...props}
+          type={isPassword ? (showPassword ? 'text' : 'password') : type}
+          autoComplete="off"
+          className={`w-full bg-transparent border-b border-vora-border/40 py-2.5 ${Icon ? 'pl-7' : 'pl-0'} ${isPassword ? 'pr-8' : 'pr-0'} focus:border-vora-accent outline-none transition-all text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-vora-primary`}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-0 p-1.5 hover:bg-vora-accent/5 rounded-full transition-colors group/eye"
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={showPassword ? 'eye-off' : 'eye-on'}
+                initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                exit={{ opacity: 0, scale: 0.8, rotate: 10 }}
+                transition={{ duration: 0.15 }}
+                className="text-vora-tertiary opacity-30 group-hover/eye:opacity-100 group-hover/eye:text-vora-accent transition-all"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </motion.div>
+            </AnimatePresence>
+          </button>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const PasswordRequirement = ({ met, label }: { met: boolean, label: string }) => (
   <div className={`flex items-center gap-2 transition-all duration-500 ${met ? 'opacity-100' : 'opacity-30'}`}>

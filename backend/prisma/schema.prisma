@@ -55,6 +55,12 @@ model User {
   
   profile   Profile?
   
+  // Auth & Verification
+  isVerified         Boolean   @default(false)
+  verificationCode   String?
+  resetPasswordCode  String?
+  codeExpiresAt      DateTime?
+
   // İlişkiler
   plan          Plan     @default(FREE)
   meals         Meal[]
