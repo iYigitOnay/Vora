@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Delete, Body, Param, Query, Request, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { MealService } from './meal.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MealType } from '@prisma/client';
@@ -9,7 +19,11 @@ export class MealController {
 
   @UseGuards(JwtAuthGuard)
   @Post('log')
-  logMeal(@Request() req, @Body() data: { foodId: string; type: MealType; amount: number; date?: string }) {
+  logMeal(
+    @Request() req,
+    @Body()
+    data: { foodId: string; type: MealType; amount: number; date?: string },
+  ) {
     return this.mealService.logMeal(req.user.userId, data);
   }
 
@@ -27,7 +41,10 @@ export class MealController {
 
   @UseGuards(JwtAuthGuard)
   @Post('template/apply')
-  applyTemplate(@Request() req, @Body() data: { templateId: string; type: any; date?: string }) {
+  applyTemplate(
+    @Request() req,
+    @Body() data: { templateId: string; type: any; date?: string },
+  ) {
     return this.mealService.applyTemplate(req.user.userId, data);
   }
 

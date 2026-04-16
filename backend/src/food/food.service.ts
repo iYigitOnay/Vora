@@ -17,8 +17,13 @@ export class FoodService {
 
     if (existing) {
       // Katı Gizlilik: Eğer ürün PRIVATE ise ve taratan kişi creator değilse, DB'dekini YOK SAY.
-      if (existing.status === FoodStatus.PRIVATE && existing.creatorId !== userId) {
-        this.logger.warn(`Gizli ürüne (PRIVATE) yetkisiz barkod erişimi engellendi: ${barcode}`);
+      if (
+        existing.status === FoodStatus.PRIVATE &&
+        existing.creatorId !== userId
+      ) {
+        this.logger.warn(
+          `Gizli ürüne (PRIVATE) yetkisiz barkod erişimi engellendi: ${barcode}`,
+        );
       } else {
         return existing;
       }
@@ -27,7 +32,7 @@ export class FoodService {
     // 2. Yoksa dış API'den çek ve VERIFIED olarak kaydet
     try {
       const response = await axios.get(
-        `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`
+        `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`,
       );
 
       if (response.data.status === 0 || !response.data.product) {
@@ -41,7 +46,10 @@ export class FoodService {
         name: product.product_name || 'Bilinmeyen Ürün',
         brand: product.brands || '',
         calories: Number(nutriments['energy-kcal_100g']) || 0,
-        protein: Number(nutriments.proteins_100g) || Number(nutriments.protein_100g) || 0,
+        protein:
+          Number(nutriments.proteins_100g) ||
+          Number(nutriments.protein_100g) ||
+          0,
         carbs: Number(nutriments.carbohydrates_100g) || 0,
         fat: Number(nutriments.fat_100g) || 0,
         defaultAmount: Number(product.product_quantity) || 100,
@@ -53,7 +61,10 @@ export class FoodService {
 
       return await this.prisma.food.create({ data: foodData });
     } catch (error) {
-      if (error.response?.status === 404 || error instanceof NotFoundException) {
+      if (
+        error.response?.status === 404 ||
+        error instanceof NotFoundException
+      ) {
         throw new NotFoundException('Ürün kütüphanede bulunamadı.');
       }
       throw new Error(`Ürün sorgulama sırasında bir sorun oluştu.`);

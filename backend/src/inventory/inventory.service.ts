@@ -113,6 +113,8 @@ export class InventoryService {
       include: { food: { select: { name: true } } },
     });
 
-    return criticalItems.filter(item => item.quantity <= (item.minLimit || 0));
+    return criticalItems.filter(
+      (item) => item.quantity <= (item.minLimit || 0),
+    );
   }
 }

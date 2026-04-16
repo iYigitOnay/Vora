@@ -1,4 +1,8 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { Plan } from '@prisma/client';
@@ -32,7 +36,7 @@ export class TemplatesService {
 
       if (templateCount >= 2) {
         throw new ForbiddenException(
-          'Ücretsiz planda en fazla 2 adet öğün şablonu oluşturabilirsiniz. Sınırsız şablon için Premium\'a geçin.',
+          "Ücretsiz planda en fazla 2 adet öğün şablonu oluşturabilirsiniz. Sınırsız şablon için Premium'a geçin.",
         );
       }
     }

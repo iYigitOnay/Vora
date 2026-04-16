@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateInventoryDto } from './dto/create-inventory.dto';
@@ -20,7 +30,11 @@ export class InventoryController {
   }
 
   @Patch(':id')
-  update(@Request() req, @Param('id') id: string, @Body() data: UpdateInventoryDto) {
+  update(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() data: UpdateInventoryDto,
+  ) {
     return this.inventoryService.update(req.user.userId, id, data);
   }
 

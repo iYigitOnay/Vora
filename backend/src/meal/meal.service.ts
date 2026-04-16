@@ -6,22 +6,25 @@ import { MealType, FoodStatus } from '@prisma/client';
 export class MealService {
   constructor(private prisma: PrismaService) {}
 
-  async logMeal(userId: string, data: { 
-    foodId?: string; 
-    foodData?: any; // Vision AI'dan gelen ham veri
-    type: MealType; 
-    amount: number; 
-    date?: string;
-    customName?: string;
-    note?: string;
-    consumeFromInventory?: boolean;
-  }) {
+  async logMeal(
+    userId: string,
+    data: {
+      foodId?: string;
+      foodData?: any; // Vision AI'dan gelen ham veri
+      type: MealType;
+      amount: number;
+      date?: string;
+      customName?: string;
+      note?: string;
+      consumeFromInventory?: boolean;
+    },
+  ) {
     const logDate = data.date ? new Date(data.date) : new Date();
     const startOfDay = new Date(logDate.setHours(0, 0, 0, 0));
     const endOfDay = new Date(logDate.setHours(23, 59, 59, 999));
 
     return this.prisma.$transaction(async (tx) => {
-      let finalFoodId = data.foodId;
+      const finalFoodId = data.foodId;
 
       // ... (Food creation logic remains same)
 
@@ -95,7 +98,10 @@ export class MealService {
     });
   }
 
-  async applyTemplate(userId: string, data: { templateId: string; type: MealType; date?: string }) {
+  async applyTemplate(
+    userId: string,
+    data: { templateId: string; type: MealType; date?: string },
+  ) {
     const template = await this.prisma.mealTemplate.findUnique({
       where: { id: data.templateId },
       include: { items: true },
@@ -104,14 +110,20 @@ export class MealService {
     if (!template) throw new BadRequestException('Şablon bulunamadı.');
 
     const logDate = data.date ? new Date(data.date) : new Date();
-    
+
     // Her bir item için logMeal mantığını çalıştır (Transaction içinde)
     return this.prisma.$transaction(async (tx) => {
-      const startOfDay = new Date(logDate); startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(logDate); endOfDay.setHours(23, 59, 59, 999);
+      const startOfDay = new Date(logDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(logDate);
+      endOfDay.setHours(23, 59, 59, 999);
 
       let meal = await tx.meal.findFirst({
-        where: { userId, type: data.type, date: { gte: startOfDay, lte: endOfDay } },
+        where: {
+          userId,
+          type: data.type,
+          date: { gte: startOfDay, lte: endOfDay },
+        },
       });
 
       if (!meal) {

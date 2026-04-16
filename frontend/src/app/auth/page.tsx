@@ -76,10 +76,22 @@ export default function AuthPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [lottieData, setLottieData] = useState(null);
+  const [verificationMode, setVerificationMode] = useState(false);
+  const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
+  const [resetStep, setResetStep] = useState(1); // 1: Email, 2: Code, 3: New Password
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
 
   useEffect(() => {
     fetch('/moody-wolf.json').then(res => res.json()).then(data => setLottieData(data));
+    
+    // Sayfa yenilendiğinde yarım kalan doğrulamayı hatırla
+    const pendingEmail = localStorage.getItem('vora_pending_verification');
+    if (pendingEmail) {
+      setFormData(prev => ({ ...prev, email: pendingEmail }));
+      setVerificationMode(true);
+    }
   }, []);
 
   const [formData, setFormData] = useState({
@@ -129,6 +141,109 @@ export default function AuthPage() {
     setFormData({ ...formData, [field]: cleaned });
   };
 
+  const handleOtpChange = (index: number, value: string) => {
+    if (value.length > 1) return; // Sadece tek rakam
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    // Otomatik odaklanma
+    if (value && index < 5) {
+      const nextInput = document.getElementById(`otp-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      const prevInput = document.getElementById(`otp-${index - 1}`);
+      prevInput?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').trim().slice(0, 6).split('');
+    if (pastedData.length > 0) {
+      const newOtp = [...otp];
+      pastedData.forEach((char, i) => {
+        if (i < 6 && /^[0-9]$/.test(char)) {
+          newOtp[i] = char;
+        }
+      });
+      setOtp(newOtp);
+      
+      // Son dolu kutucuğa veya bir sonrakine odaklan
+      const nextIndex = Math.min(pastedData.length, 5);
+      document.getElementById(`otp-${nextIndex}`)?.focus();
+    }
+  };
+
+  const handleVerify = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const code = otp.join('');
+      await api.post('/auth/verify-email', { email: formData.email, code });
+      localStorage.removeItem('vora_pending_verification'); // Başarılıysa temizle
+      // Doğrulama başarılı, şimdi giriş yapalım
+      const res = await api.post('/auth/login', { email: formData.email, password: formData.password });
+      saveTokensAndRedirect(res.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Doğrulama başarısız.');
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!formData.email) {
+      setError('Lütfen e-posta adresinizi girin.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await api.post('/auth/forgot-password', { email: formData.email });
+      setResetStep(2); // Kod girme adımına geç
+      setLoading(false);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'İstek gönderilemedi.');
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    const code = otp.join('');
+    if (code.length < 6) {
+      setError('Lütfen 6 haneli kodu girin.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await api.post('/auth/reset-password', { 
+        email: formData.email, 
+        code, 
+        newPassword: formData.password 
+      });
+      setForgotPasswordMode(false);
+      setIsLogin(true);
+      setError('Şifreniz başarıyla güncellendi. Giriş yapabilirsiniz.');
+      setTimeout(() => setError(null), 5000);
+      setLoading(false);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Şifre sıfırlama başarısız.');
+      setLoading(false);
+    }
+  };
+
+  const saveTokensAndRedirect = (data: any) => {
+    localStorage.setItem('vora_access_token', data.access_token);
+    localStorage.setItem('vora_refresh_token', data.refresh_token);
+    localStorage.setItem('vora_user_id', data.userId || ''); 
+    router.push('/');
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     setError(null);
@@ -142,15 +257,23 @@ export default function AuthPage() {
         targetWeight: Number(formData.targetWeight) 
       };
       const res = await api.post(endpoint, payload);
-      localStorage.setItem('vora_access_token', res.data.access_token);
-      localStorage.setItem('vora_refresh_token', res.data.refresh_token);
-      // Backend'den dönen veride userId sub alanında (JWT payload) ama 
-      // AuthService'deki generateTokens metodunu bir tık güncelleyip userId'yi de dönebiliriz 
-      // veya token'dan decode edebiliriz. En garantisi backend'in de dönmesi.
-      localStorage.setItem('vora_user_id', res.data.userId || ''); 
-      router.push('/');
+      
+      if (!isLogin) {
+        // Kayıt başarılı, email'i hatırla ve doğrulama ekranına geç
+        localStorage.setItem('vora_pending_verification', formData.email);
+        setVerificationMode(true);
+        setLoading(false);
+      } else {
+        saveTokensAndRedirect(res.data);
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Giriş yapılamadı.');
+      const msg = err.response?.data?.message;
+      if (msg === 'Lütfen önce e-posta adresinizi doğrulayın.') {
+        localStorage.setItem('vora_pending_verification', formData.email);
+        setVerificationMode(true);
+      } else {
+        setError(msg || 'Giriş yapılamadı.');
+      }
       setLoading(false);
     }
   };
@@ -193,7 +316,14 @@ export default function AuthPage() {
               {isLogin ? 'Değişimi Başlat' : 'Yuvana Dön'}
             </h3>
             <button 
-              onClick={() => { setIsLogin(!isLogin); setStep(1); setError(null); }}
+              onClick={() => { 
+                setIsLogin(!isLogin); 
+                setStep(1); 
+                setError(null); 
+                setVerificationMode(false);
+                setOtp(['', '', '', '', '', '']);
+                localStorage.removeItem('vora_pending_verification');
+              }}
               className="group text-vora-accent text-[9px] font-bold uppercase tracking-[0.3em] flex flex-col items-center gap-1 w-full"
             >
               <span className="text-center">{isLogin ? 'Kayıt Ol' : 'Giriş Yap'}</span>
@@ -210,7 +340,142 @@ export default function AuthPage() {
         >
           <div className="w-full max-w-[340px]">
             <AnimatePresence mode="wait">
-              {isLogin ? (
+              {forgotPasswordMode ? (
+                <motion.div
+                  key="forgot"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-10 relative"
+                >
+                  {/* Back Button */}
+                  <button 
+                    onClick={() => {
+                      if (resetStep === 1) {
+                        setForgotPasswordMode(false);
+                      } else {
+                        setResetStep(resetStep - 1);
+                      }
+                    }}
+                    className="absolute -top-12 -left-4 p-2 text-vora-tertiary hover:text-vora-accent transition-colors group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ChevronLeft className="w-4 h-4" />
+                      <span className="text-[8px] font-bold tracking-[0.2em] uppercase opacity-0 group-hover:opacity-100 transition-opacity">GERİ</span>
+                    </div>
+                  </button>
+
+                  <div className="text-center space-y-2">
+                    <h2 className="text-2xl font-light tracking-[0.3em] uppercase">KURTARMA</h2>
+                    <p className="text-vora-tertiary text-[9px] tracking-[0.2em] uppercase opacity-50 font-bold">
+                      {resetStep === 1 ? 'E-POSTA ADRESİNİZİ GİRİN' : resetStep === 2 ? 'KODU DOĞRULAYIN' : 'YENİ ŞİFRE BELİRLEYİN'}
+                    </p>
+                  </div>
+
+                  {resetStep === 1 && (
+                    <div className="space-y-8">
+                      <UnderlinedInput label="E-POSTA" icon={Mail} type="email" placeholder="adiniz@email.com" value={formData.email} onChange={(e:any) => setFormData({...formData, email: e.target.value})} />
+                      <button onClick={handleForgotPassword} className="w-full bg-vora-accent text-vora-on-accent text-[11px] font-bold py-5 rounded-full tracking-[0.4em] uppercase shadow-xl hover:brightness-105 transition-all">KOD GÖNDER</button>
+                    </div>
+                  )}
+
+                  {resetStep === 2 && (
+                    <div className="space-y-10">
+                      <div className="flex justify-between gap-2">
+                        {otp.map((digit, idx) => (
+                          <input key={idx} id={`otp-${idx}`} type="text" maxLength={1} value={digit} onChange={(e) => handleOtpChange(idx, e.target.value)} onKeyDown={(e) => handleOtpKeyDown(idx, e)} className="w-11 h-14 bg-vora-surface border border-vora-border/20 rounded-xl text-center text-xl font-bold text-vora-accent focus:border-vora-accent outline-none transition-all" />
+                        ))}
+                      </div>
+                      <button 
+                        onClick={() => {
+                          const code = otp.join('');
+                          if (code.length < 6) {
+                            setError('Lütfen 6 haneli kodu girin.');
+                            return;
+                          }
+                          // Kodun doğruluğunu resetStep 3'te handleResetPassword içinde zaten kontrol ediyoruz, 
+                          // ancak kullanıcı deneyimi için burada da bir "check" eklenebilir. 
+                          // Mevcut yapıda handleResetPassword hem kodu hem yeni şifreyi gönderiyor.
+                          // Bu yüzden sadece kodun dolu olduğunu kontrol edip geçiyoruz.
+                          setResetStep(3);
+                        }} 
+                        className="w-full bg-vora-accent text-vora-on-accent text-[11px] font-bold py-5 rounded-full tracking-[0.4em] uppercase shadow-xl transition-all"
+                      >
+                        DEVAM ET
+                      </button>
+                    </div>
+                  )}
+
+                  {resetStep === 3 && (
+                    <div className="space-y-8">
+                      <UnderlinedInput label="YENİ ŞİFRE" icon={Lock} type="password" placeholder="••••••••" value={formData.password} onChange={(e:any) => setFormData({...formData, password: e.target.value})} />
+                      <button onClick={handleResetPassword} className="w-full bg-vora-accent text-vora-on-accent text-[11px] font-bold py-5 rounded-full tracking-[0.4em] uppercase shadow-xl transition-all">ŞİFREYİ GÜNCELLE</button>
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={() => { setForgotPasswordMode(false); setResetStep(1); }}
+                    className="w-full text-[9px] font-bold text-vora-tertiary tracking-[0.2em] uppercase hover:text-vora-accent transition-colors text-center"
+                  >
+                    Giriş Ekranına Dön
+                  </button>
+                </motion.div>
+              ) : verificationMode ? (
+                <motion.div
+                  key="verify"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.05 }}
+                  className="space-y-10 text-center"
+                >
+                  <div className="space-y-4">
+                    <div className="w-16 h-16 bg-vora-accent/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                      <Mail className="w-8 h-8 text-vora-accent" />
+                    </div>
+                    <h2 className="text-2xl font-light tracking-[0.3em] uppercase">DOĞRULAMA</h2>
+                    <p className="text-vora-tertiary text-[9px] tracking-[0.2em] uppercase opacity-60 leading-relaxed">
+                      {formData.email} adresine gönderilen 6 haneli kodu girin.
+                    </p>
+                  </div>
+
+                  <div className="flex justify-between gap-2">
+                    {otp.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        id={`otp-${idx}`}
+                        type="text"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(idx, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                        onPaste={handlePaste}
+                        className="w-11 h-14 bg-vora-surface border border-vora-border/20 rounded-xl text-center text-xl font-bold text-vora-accent focus:border-vora-accent focus:ring-4 focus:ring-vora-accent/5 outline-none transition-all"
+                      />
+                    ))}
+                  </div>
+
+                  <div className="space-y-6">
+                    <button 
+                      onClick={handleVerify}
+                      disabled={otp.some(d => !d) || loading}
+                      className="w-full bg-vora-accent text-vora-on-accent text-[11px] font-bold py-5 rounded-full tracking-[0.4em] uppercase shadow-xl shadow-vora-accent/20 disabled:opacity-20 transition-all"
+                    >
+                      KODU DOĞRULA
+                    </button>
+                    
+                    <button 
+                      onClick={async () => {
+                        await api.post('/auth/resend-verification', { email: formData.email });
+                        setSuccess('Yeni kod gönderildi.');
+                        setTimeout(() => setSuccess(null), 3000);
+                      }}
+                      className="text-[9px] font-bold text-vora-tertiary tracking-[0.2em] uppercase hover:text-vora-accent transition-colors"
+                    >
+                      Kodu Tekrar Gönder
+                    </button>
+                  </div>
+                </motion.div>
+              ) : isLogin ? (
                 <motion.form 
                   key="login" 
                   initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
@@ -223,7 +488,16 @@ export default function AuthPage() {
                   </div>
                   <div className="space-y-4">
                     <UnderlinedInput label="E-POSTA" icon={Mail} type="email" required placeholder="adiniz@email.com" value={formData.email} onChange={(e:any) => setFormData({...formData, email: e.target.value})} />
-                    <UnderlinedInput label="ŞİFRE" icon={Lock} type="password" required placeholder="••••••••" value={formData.password} onChange={(e:any) => setFormData({...formData, password: e.target.value})} />
+                    <div className="relative">
+                      <UnderlinedInput label="ŞİFRE" icon={Lock} type="password" required placeholder="••••••••" value={formData.password} onChange={(e:any) => setFormData({...formData, password: e.target.value})} />
+                      <button 
+                        type="button" 
+                        onClick={() => setForgotPasswordMode(true)}
+                        className="absolute -bottom-6 right-0 text-[8px] font-bold text-vora-tertiary uppercase tracking-widest hover:text-vora-accent transition-colors"
+                      >
+                        Şifremi Unuttum?
+                      </button>
+                    </div>
                   </div>
                   <button type="submit" className="w-full bg-vora-accent text-vora-on-accent text-[11px] font-bold py-5 rounded-full tracking-[0.4em] uppercase shadow-xl shadow-vora-accent/10 hover:brightness-105 active:scale-[0.98] transition-all">SİSTEME ERİŞ</button>
                 </motion.form>
@@ -385,13 +659,15 @@ export default function AuthPage() {
       </div>
 
       <AnimatePresence>
-        {error && (
+        {(error || success) && (
           <motion.div 
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
-            className="absolute top-10 left-1/2 -translate-x-1/2 bg-vora-error/10 text-vora-error text-[10px] font-bold py-2.5 px-8 rounded-full border border-vora-error/20 uppercase tracking-[0.2em] z-[60] flex items-center gap-3 backdrop-blur-md shadow-2xl"
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: 20 }}
+            className={`absolute top-10 left-1/2 -translate-x-1/2 ${error ? 'bg-vora-error/10 text-vora-error border-vora-error/20' : 'bg-vora-accent/10 text-vora-accent border-vora-accent/20'} text-[10px] font-bold py-2.5 px-8 rounded-full border uppercase tracking-[0.2em] z-[60] flex items-center gap-3 backdrop-blur-md shadow-2xl`}
           >
-            <AlertCircle className="w-4 h-4" />
-            {error}
+            {error ? <AlertCircle className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+            {error || success}
           </motion.div>
         )}
       </AnimatePresence>

@@ -14,7 +14,8 @@ import { TemplatesModule } from './templates/templates.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, // Her yerde process.env yerine ConfigService kullanabiliriz
+      isGlobal: true,
+      envFilePath: ['.env', 'backend/.env', '../backend/.env'], // Birden fazla olasılığı dene
     }),
     PrismaModule,
     AuthModule,

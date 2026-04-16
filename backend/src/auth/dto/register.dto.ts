@@ -1,4 +1,15 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsEnum, IsNumber, IsOptional, Min, Max, Matches } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  MinLength,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  Min,
+  Max,
+  Matches,
+} from 'class-validator';
 import { Gender, ActivityLevel, Persona, Goal } from '@prisma/client';
 
 export class RegisterDto {
@@ -9,7 +20,8 @@ export class RegisterDto {
   @IsString()
   @MinLength(8, { message: 'Şifre en az 8 karakter olmalıdır' })
   @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
-    message: 'Şifre en az bir büyük harf, bir küçük harf ve bir rakam veya özel karakter içermelidir',
+    message:
+      'Şifre en az bir büyük harf, bir küçük harf ve bir rakam veya özel karakter içermelidir',
   })
   password: string;
 
