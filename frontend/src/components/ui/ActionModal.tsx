@@ -35,8 +35,9 @@ export function ActionModal({ onClose, title, subtitle, icon: Icon, children }: 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
       onClick={onClose}
-      className="fixed inset-0 z-[100] bg-vora-background/95 flex items-center justify-center p-4 backdrop-blur-sm cursor-pointer"
+      className="fixed inset-0 z-[100] bg-vora-background/95 flex items-center justify-center p-4 cursor-pointer"
     >
       <motion.div
         initial={{ scale: 0.95, y: 20 }}
