@@ -168,27 +168,25 @@ export function BarcodeAction({ onSuccess, initialMealType }: BarcodeActionProps
                 </div>
               </div>
 
-              {/* Amount and Inventory */}
+              {/* Smart Inventory Toggle */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between border-b border-vora-border/10 pb-2 group-focus-within:border-vora-accent transition-all px-1">
-                  <div className="flex-1">
-                    <p className="text-[8px] font-black text-vora-tertiary uppercase tracking-[0.3em] opacity-40">MİKTAR (G)</p>
-                    <input type="text" inputMode="numeric" value={amount} onChange={(e) => handleNumericInput(e.target.value)} className="w-full bg-transparent text-4xl font-black text-vora-primary outline-none tracking-tighter" placeholder="0" />
-                  </div>
-                  
-                  <div className="bg-white/[0.02] border border-vora-border/5 rounded-2xl p-3 flex items-center gap-3">
-                    <div className="text-right">
-                      <p className="text-[9px] font-black text-vora-primary uppercase tracking-tighter">Kiler</p>
-                      <p className="text-[7px] text-vora-tertiary uppercase tracking-tighter opacity-50">Düş</p>
+                <button 
+                  onClick={() => setConsumeFromInventory(!consumeFromInventory)}
+                  className={`w-full p-4 rounded-3xl border transition-all duration-500 flex items-center justify-between group ${consumeFromInventory ? "bg-vora-accent/10 border-vora-accent/30 shadow-[0_0_20px_rgba(var(--color-accent),0.1)]" : "bg-white/[0.02] border-white/5 hover:bg-white/[0.04]"}`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`p-2.5 rounded-xl transition-all ${consumeFromInventory ? "bg-vora-accent text-vora-on-accent" : "bg-white/5 text-vora-tertiary"}`}>
+                      <Home className="w-4 h-4" />
                     </div>
-                    <button 
-                      onClick={() => setConsumeFromInventory(!consumeFromInventory)} 
-                      className={`w-10 h-6 rounded-full relative transition-all duration-300 ${consumeFromInventory ? "bg-vora-accent" : "bg-white/10"}`}
-                    >
-                      <motion.div animate={{ x: consumeFromInventory ? 18 : 4 }} className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full" />
-                    </button>
+                    <div className="text-left">
+                      <p className={`text-[10px] font-black uppercase tracking-widest ${consumeFromInventory ? "text-vora-accent" : "text-vora-primary"}`}>Kilerimden Kullan</p>
+                      <p className="text-[7px] font-bold text-vora-tertiary uppercase tracking-tighter opacity-50">Stok miktarını otomatik düşer</p>
+                    </div>
                   </div>
-                </div>
+                  <div className={`w-10 h-5 rounded-full relative transition-all ${consumeFromInventory ? "bg-vora-accent" : "bg-white/10"}`}>
+                    <motion.div animate={{ x: consumeFromInventory ? 22 : 2 }} className="absolute top-0.5 left-0 w-4 h-4 bg-white rounded-full shadow-lg" />
+                  </div>
+                </button>
 
                 <div className="grid grid-cols-4 gap-1.5">
                   {["BREAKFAST", "LUNCH", "DINNER", "SNACK"].map(t => (

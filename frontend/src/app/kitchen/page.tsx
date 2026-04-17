@@ -95,13 +95,13 @@ export default function KitchenPage() {
     <div className="h-[calc(100vh-100px)] flex flex-col justify-between overflow-hidden relative">
       <DashboardHeader user={user} auraStreak={dashboard?.auraStreak} title="MUTFAĞIM" subtitle="DİJİTAL ASİSTANINIZIN KALBİ" />
 
-      {/* Grid Area */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 flex-1 min-h-0 mb-8 overflow-hidden mt-8">
+      {/* Grid Area - Analiz sayfasıyla birebir aynı iskelet */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 flex-1 min-h-0 mb-8">
         
         {/* Main List Area */}
         <BentoCard 
           icon={activeTab === "inventory" ? Package : ChefHat} 
-          className="md:col-span-8 h-full"
+          className="md:col-span-8 md:row-span-2 h-full"
           headerAction={
             <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-2xl relative">
               {["inventory", "templates"].map((tab) => (
@@ -134,7 +134,7 @@ export default function KitchenPage() {
                 inventory.length > 0 ? (
                   inventory.map((item) => (
                     <motion.div key={item.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center justify-between p-4 bg-white/[0.02] border border-vora-border/10 rounded-2xl group/item hover:bg-white/[0.04] transition-all" >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 text-left">
                         <div className="w-12 h-12 bg-vora-accent/10 rounded-xl flex items-center justify-center overflow-hidden border border-vora-accent/5">
                           {item.food?.image ? <img src={item.food.image} alt={item.food?.name} className="w-full h-full object-cover" /> : <Package className="w-5 h-5 text-vora-accent" />}
                         </div>
@@ -172,7 +172,7 @@ export default function KitchenPage() {
                   templates.map((template) => (
                     <motion.div key={template.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="p-5 bg-white/[0.02] border border-vora-border/10 rounded-3xl group/temp hover:bg-white/[0.04] transition-all relative overflow-visible" >
                       <div className="flex justify-between items-start mb-4">
-                        <div>
+                        <div className="text-left">
                           <h4 className="text-sm font-black text-vora-primary uppercase tracking-tight">{template.name}</h4>
                           <p className="text-[9px] text-vora-tertiary uppercase tracking-[0.2em] mt-1"> {template.items.length} BESİN • {Math.round(template.items.reduce((acc:any, curr:any) => acc + (curr.food.calories * curr.amount / 100), 0))} KCAL </p>
                         </div>
@@ -234,28 +234,55 @@ export default function KitchenPage() {
         </BentoCard>
 
         {/* Side Panel */}
-        <div className="md:col-span-4 flex flex-col gap-8 h-full overflow-hidden">
+        <div className="md:col-span-4 md:row-span-2 flex flex-col gap-8 h-full">
           <BentoCard title="MUTFAK ÖZETİ" icon={Info} className="flex-1">
             <div className="space-y-6">
-              <div className="p-5 bg-vora-accent/5 border border-vora-accent/20 rounded-3xl">
-                <p className="text-[9px] font-bold text-vora-accent uppercase tracking-widest mb-1">STOK DURUMU</p>
-                <p className="text-2xl font-black text-vora-primary tracking-tighter"> {inventory.filter(i => i.minLimit && i.quantity <= i.minLimit).length} <span className="text-xs font-bold text-vora-tertiary uppercase tracking-widest ml-2">KRİTİK ÜRÜN</span> </p>
-              </div>
-              <div className="p-5 bg-white/[0.02] border border-vora-border/10 rounded-3xl">
-                <p className="text-[9px] font-bold text-vora-tertiary uppercase tracking-widest mb-3">ŞABLON KULLANIMI</p>
-                <div className="flex justify-between items-center">
-                  <p className="text-2xl font-black text-vora-primary tracking-tighter"> {templates.length} <span className="text-xs font-bold text-vora-tertiary uppercase tracking-widest ml-2">/ 2</span> </p>
-                  <div className="flex gap-1.5"> {[1, 2].map((i) => ( <div key={i} className={`w-6 h-1.5 rounded-full transition-all duration-500 ${i <= templates.length ? "bg-vora-accent shadow-[0_0_10px_rgba(var(--vora-accent-rgb),0.5)]" : "bg-white/10"}`} /> ))} </div>
+              <div className="p-6 bg-vora-accent/5 border border-vora-accent/20 rounded-[2rem] hover:bg-vora-accent/10 transition-colors group/status">
+                <div className="flex justify-between items-start mb-4">
+                  <p className="text-[10px] font-black text-vora-accent uppercase tracking-[0.2em]">STOK DURUMU</p>
+                  <AlertTriangle className={`w-4 h-4 text-vora-accent ${inventory.filter(i => i.minLimit && i.quantity <= i.minLimit).length > 0 ? "animate-pulse" : "opacity-20"}`} />
                 </div>
-                {templates.length >= 2 && <p className="text-[8px] font-bold text-vora-accent uppercase tracking-widest mt-3 animate-pulse"> PREMIUM İLE SINIRLARI KALDIRIN </p>}
+                <p className="text-3xl font-black text-vora-primary tracking-tighter"> 
+                  {inventory.filter(i => i.minLimit && i.quantity <= i.minLimit).length} 
+                  <span className="text-[10px] font-bold text-vora-tertiary uppercase tracking-widest ml-3 opacity-60 text-indent-2">KRİTİK ÜRÜN</span> 
+                </p>
+              </div>
+
+              <div className="p-6 bg-white/[0.02] border border-vora-border/10 rounded-[2rem]">
+                <div className="flex justify-between items-center mb-6">
+                  <p className="text-[10px] font-black text-vora-tertiary uppercase tracking-[0.2em] opacity-40">ŞABLON KOTASI</p>
+                  <p className="text-[10px] font-mono font-bold text-vora-primary tracking-widest">0{templates.length} <span className="opacity-20">/</span> 02</p>
+                </div>
+                
+                {/* Biometric Gauge */}
+                <div className="relative h-2 bg-white/5 rounded-full overflow-hidden mb-4 border border-white/5">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(templates.length / 2) * 100}%` }}
+                    className={`absolute inset-y-0 left-0 rounded-full ${templates.length >= 2 ? "bg-red-500" : "bg-vora-accent"} shadow-[0_0_15px_rgba(var(--color-accent),0.5)]`}
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <p className="text-[8px] font-bold text-vora-tertiary uppercase tracking-widest opacity-30">SLOTS REMAINING</p>
+                  <p className={`text-[8px] font-black uppercase tracking-widest ${templates.length >= 2 ? "text-red-500" : "text-vora-accent"}`}>
+                    {2 - templates.length} KULLANILABİLİR
+                  </p>
+                </div>
+
+                {templates.length >= 2 && (
+                  <button className="w-full mt-6 py-3 bg-vora-accent/10 border border-vora-accent/20 rounded-xl text-vora-accent text-[9px] font-black uppercase tracking-[0.2em] hover:bg-vora-accent hover:text-white transition-all">
+                    Limitleri Kaldır
+                  </button>
+                )}
               </div>
             </div>
           </BentoCard>
 
-          <BentoCard title="ELITE ANALİZ" icon={ChefHat} className="shrink-0 bg-vora-accent/5 border-vora-accent/20">
+          <BentoCard title="ELITE ANALİZ" icon={ChefHat} className="bg-vora-accent/5 border-vora-accent/20 min-h-[180px]">
              <div className="space-y-4">
-                <p className="text-[10px] text-vora-primary leading-relaxed uppercase tracking-wider font-extrabold italic"> {inventory.length > 0 ? `"${user?.firstName}, kilerindeki ürünlerin çoğu karbonhidrat odaklı. Protein stoğunu artırman disiplini korumanı sağlar."` : `"${user?.firstName}, mutfağın şu an boş. Akıllı bir takip için kilerine birkaç temel besin ekleyerek başlayalım."`} </p>
-                <div className="flex items-center gap-2 opacity-30"> <div className="w-1 h-1 rounded-full bg-vora-accent" /> <p className="text-[8px] font-bold uppercase tracking-[0.2em]">{user?.persona || "VORA"} ENGINE</p> </div>
+                <p className="text-[11px] text-vora-primary leading-relaxed uppercase tracking-wider font-extrabold italic"> {inventory.length > 0 ? `"${user?.firstName}, kilerindeki ürünlerin çoğu karbonhidrat odaklı. Protein stoğunu artırman disiplini korumanı sağlar."` : `"${user?.firstName}, mutfağın şu an boş. Akıllı bir takip için kilerine birkaç temel besin ekleyerek başlayalım."`} </p>
+                <div className="flex items-center gap-2 opacity-30"> <div className="w-1.5 h-1.5 rounded-full bg-vora-accent" /> <p className="text-[9px] font-bold uppercase tracking-[0.3em]">{user?.persona || "VORA"} ENGINE</p> </div>
              </div>
           </BentoCard>
         </div>

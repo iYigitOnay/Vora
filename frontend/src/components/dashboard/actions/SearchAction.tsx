@@ -14,17 +14,17 @@ interface SearchActionProps {
 
 const SourceTag = ({ status }: { status: string }) => {
   if (status === 'VERIFIED') return (
-    <div className="flex items-center gap-1.5 text-[7px] font-black text-vora-success tracking-widest uppercase bg-vora-success/5 px-2.5 py-1 rounded-full border border-vora-success/10 mt-1">
+    <div className="flex items-center gap-1.5 text-[7px] font-black text-vora-success tracking-widest uppercase bg-vora-success/5 px-2.5 py-1 rounded-full border border-vora-success/10 mt-1 w-fit shrink-0 whitespace-nowrap">
       <ShieldCheck className="w-2.5 h-2.5" /> VELA BARKOD
     </div>
   );
   if (status === 'PRIVATE') return (
-    <div className="flex items-center gap-1.5 text-[7px] font-black text-vora-accent tracking-widest uppercase bg-vora-accent/5 px-2.5 py-1 rounded-full border border-vora-accent/10 mt-1">
+    <div className="flex items-center gap-1.5 text-[7px] font-black text-vora-accent tracking-widest uppercase bg-vora-accent/5 px-2.5 py-1 rounded-full border border-vora-accent/10 mt-1 w-fit shrink-0 whitespace-nowrap">
       <User className="w-2.5 h-2.5" /> SENİN TARİFİN
     </div>
   );
   return (
-    <div className="flex items-center gap-1.5 text-[7px] font-bold text-vora-tertiary tracking-widest uppercase bg-white/5 px-2.5 py-1 rounded-full border border-white/10 mt-1">
+    <div className="flex items-center gap-1.5 text-[7px] font-bold text-vora-tertiary tracking-widest uppercase bg-white/5 px-2.5 py-1 rounded-full border border-white/10 mt-1 w-fit shrink-0 whitespace-nowrap">
       <Utensils className="w-2.5 h-2.5" /> TOPLULUK VERİSİ
     </div>
   );
@@ -157,79 +157,73 @@ export function SearchAction({ onSuccess, initialMealType }: SearchActionProps) 
             </div>
           </motion.div>
         ) : (
-          <motion.div key="step2" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} className="flex flex-col h-full justify-center space-y-4 pt-4" >
-            <button onClick={() => setStep(1)} className="flex items-center gap-2 text-vora-tertiary hover:text-vora-primary transition-colors text-[9px] font-black uppercase tracking-widest w-fit outline-none group mb-1" >
-              <ChevronLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" /> GERİ DÖN
+          <motion.div key="step2" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} className="flex flex-col h-full space-y-3 pt-1" >
+            <button onClick={() => setStep(1)} className="flex items-center gap-2 text-vora-tertiary hover:text-vora-primary transition-colors text-[9px] font-black uppercase tracking-widest w-fit outline-none group mb-0.5" >
+              <ChevronLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" /> GERİ DÖN
             </button>
 
-            <div className="bg-white/[0.03] border border-vora-border/10 rounded-[2.5rem] p-5 space-y-5">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-vora-accent/10 rounded-xl border border-vora-accent/10">
-                  <Utensils className="w-5 h-5 text-vora-accent" />
+            <div className="bg-white/[0.03] border border-vora-border/10 rounded-[2.5rem] p-5 flex-1 flex flex-col justify-between overflow-hidden">
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-vora-accent/10 rounded-xl border border-vora-accent/10 shrink-0">
+                    <Utensils className="w-5 h-5 text-vora-accent" />
+                  </div>
+                  <div className="min-w-0">
+                    <SourceTag status={selectedFood.status} />
+                    <h3 className="text-base font-black text-vora-primary tracking-tight truncate uppercase leading-tight mt-0.5">{selectedFood.name}</h3>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <SourceTag status={selectedFood.status} />
-                  <h3 className="text-lg font-black text-vora-primary tracking-tighter truncate uppercase mt-0.5">{selectedFood.name}</h3>
+
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { label: "KCAL", val: calc(selectedFood.calories), c: "text-vora-primary" },
+                    { label: "PRO", val: calc(selectedFood.protein), c: "text-vora-accent" },
+                    { label: "KRB", val: calc(selectedFood.carbs), c: "text-vora-primary" },
+                    { label: "YAĞ", val: calc(selectedFood.fat), c: "text-vora-primary" },
+                  ].map(m => (
+                    <div key={m.label} className="p-2 bg-white/5 border border-white/5 rounded-xl text-center flex flex-col justify-center">
+                      <p className={`text-sm font-black tracking-tighter ${m.c}`}>{m.val}</p>
+                      <p className="text-[6px] font-black text-vora-tertiary uppercase tracking-tighter opacity-40">{m.label}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <InfoNotice status={selectedFood.status} />
-
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { label: "KCAL", val: calc(selectedFood.calories) },
-                  { label: "PRO", val: calc(selectedFood.protein) },
-                  { label: "KRB", val: calc(selectedFood.carbs) },
-                  { label: "YAĞ", val: calc(selectedFood.fat) },
-                ].map(m => (
-                  <div key={m.label} className="p-2 bg-white/5 border border-white/5 rounded-xl text-center">
-                    <p className="text-base font-black tracking-tighter text-vora-primary">{m.val}</p>
-                    <p className="text-[7px] font-bold text-vora-tertiary uppercase tracking-widest">{m.label}</p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 p-1.5 bg-white/5 border border-vora-border/10 rounded-xl">
+                  <button onClick={() => handleNumericInput((Number(amount) - 10).toString())} className="p-2 hover:bg-white/10 rounded-lg text-vora-tertiary outline-none active:scale-90 transition-all"><Minus className="w-3.5 h-3.5" /></button>
+                  <div className="flex-1 text-center">
+                    <input autoFocus type="text" inputMode="numeric" value={amount} onChange={(e) => handleNumericInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleFinalSubmit()} className="w-full bg-transparent text-center text-3xl font-black text-vora-primary outline-none tracking-tighter" placeholder="0" />
+                    <p className="text-[6px] font-black text-vora-tertiary uppercase tracking-[0.2em] opacity-40">GRAM / ML</p>
                   </div>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-2 p-1.5 bg-white/5 border border-vora-border/10 rounded-xl">
-                <button onClick={() => handleNumericInput((Number(amount) - 10).toString())} className="p-2.5 hover:bg-white/10 rounded-lg text-vora-tertiary outline-none active:scale-90"><Minus className="w-4 h-4" /></button>
-                <div className="flex-1 text-center">
-                  <input autoFocus type="text" inputMode="numeric" value={amount} onChange={(e) => handleNumericInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleFinalSubmit()} className="w-full bg-transparent text-center text-3xl font-black text-vora-primary outline-none tracking-tighter" placeholder="0" />
-                  <p className="text-[7px] font-black text-vora-tertiary uppercase tracking-[0.2em]">GRAM / ML</p>
+                  <button onClick={() => handleNumericInput((Number(amount) + 10).toString())} className="p-2 hover:bg-white/10 rounded-lg text-vora-tertiary outline-none active:scale-90 transition-all"><Plus className="w-3.5 h-3.5" /></button>
                 </div>
-                <button onClick={() => handleNumericInput((Number(amount) + 10).toString())} className="p-2.5 hover:bg-white/10 rounded-lg text-vora-tertiary outline-none active:scale-90"><Plus className="w-4 h-4" /></button>
-              </div>
 
-              {/* Smart Inventory Toggle */}
-              <div className="bg-white/[0.02] border border-vora-border/10 rounded-2xl p-4 flex items-center justify-between group/toggle hover:bg-white/[0.04] transition-all">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl transition-all ${consumeFromInventory ? "bg-vora-accent/10 text-vora-accent" : "bg-white/5 text-vora-tertiary"}`}>
-                    <Home className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-[9px] font-bold text-vora-primary uppercase tracking-widest">Kilerimden Kullan</h4>
-                    <p className="text-[7px] font-bold text-vora-tertiary uppercase tracking-[0.1em] mt-0.5">Stoktan düşer</p>
-                  </div>
-                </div>
+                {/* Smart Inventory Toggle */}
                 <button 
                   onClick={() => setConsumeFromInventory(!consumeFromInventory)}
-                  className={`w-10 h-6 rounded-full relative transition-all duration-300 ${consumeFromInventory ? "bg-vora-accent" : "bg-white/10"}`}
+                  className={`w-full p-3 rounded-2xl border transition-all duration-500 flex items-center justify-between group ${consumeFromInventory ? "bg-vora-accent/10 border-vora-accent/20" : "bg-white/[0.01] border-white/5"}`}
                 >
-                  <motion.div 
-                    animate={{ x: consumeFromInventory ? 18 : 2 }}
-                    className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full shadow-lg"
-                  />
+                  <div className="flex items-center gap-3">
+                    <Home className={`w-3.5 h-3.5 ${consumeFromInventory ? "text-vora-accent" : "text-vora-tertiary"}`} />
+                    <p className={`text-[9px] font-black uppercase tracking-widest ${consumeFromInventory ? "text-vora-accent" : "text-vora-primary"}`}>Kilerimden Kullan</p>
+                  </div>
+                  <div className={`w-8 h-4 rounded-full relative transition-all ${consumeFromInventory ? "bg-vora-accent" : "bg-white/10"}`}>
+                    <motion.div animate={{ x: consumeFromInventory ? 18 : 2 }} className="absolute top-0.5 left-0 w-3 h-3 bg-white rounded-full shadow-lg" />
+                  </div>
                 </button>
+              </div>
+
+              <div className="grid grid-cols-4 gap-1.5 px-0.5">
+                {["BREAKFAST", "LUNCH", "DINNER", "SNACK"].map(t => (
+                  <button key={t} onClick={() => setMealType(t)} className={`py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border outline-none ${mealType === t ? "bg-vora-accent text-vora-on-accent border-vora-accent shadow-md" : "bg-white/[0.02] border-white/5 text-vora-tertiary hover:bg-white/5"}`} >
+                    {t === "BREAKFAST" ? "Sabah" : t === "LUNCH" ? "Öğle" : t === "DINNER" ? "Akşam" : "Ara"}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-2 px-1">
-              {["BREAKFAST", "LUNCH", "DINNER", "SNACK"].map(t => (
-                <button key={t} onClick={() => setMealType(t)} className={`py-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border outline-none ${mealType === t ? "bg-vora-accent text-vora-on-accent border-vora-accent" : "bg-white/[0.02] border-vora-border/5 text-vora-tertiary hover:bg-white/5"}`} >
-                  {t === "BREAKFAST" ? "Sabah" : t === "LUNCH" ? "Öğle" : t === "DINNER" ? "Akşam" : "Ara"}
-                </button>
-              ))}
-            </div>
-
-            <button onClick={handleFinalSubmit} disabled={loading || !amount || Number(amount) <= 0} className="w-full py-4 bg-vora-accent text-vora-on-accent rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] shadow-lg outline-none disabled:opacity-20 hover:brightness-110 active:scale-[0.98] transition-all" >
+            <button onClick={handleFinalSubmit} disabled={loading || !amount || Number(amount) <= 0} className="w-full py-3.5 bg-vora-accent text-vora-on-accent rounded-[1.5rem] font-black uppercase tracking-[0.3em] text-[9px] shadow-lg hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-20" >
               {loading ? "İŞLENİYOR..." : "ÖĞÜNE EKLE"}
             </button>
           </motion.div>
