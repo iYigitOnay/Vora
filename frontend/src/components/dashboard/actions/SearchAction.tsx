@@ -14,18 +14,18 @@ interface SearchActionProps {
 
 const SourceTag = ({ status }: { status: string }) => {
   if (status === 'VERIFIED') return (
-    <div className="flex items-center gap-1.5 text-[7px] font-black text-vora-success tracking-widest uppercase bg-vora-success/5 px-2.5 py-1 rounded-full border border-vora-success/10 mt-1 w-fit shrink-0 whitespace-nowrap">
-      <ShieldCheck className="w-2.5 h-2.5" /> VELA BARKOD
+    <div className="flex items-center gap-1.5 text-[7px] font-black text-vora-success tracking-[0.2em] uppercase mb-1">
+      <ShieldCheck className="w-3 h-3" /> VORA BARKOD
     </div>
   );
   if (status === 'PRIVATE') return (
-    <div className="flex items-center gap-1.5 text-[7px] font-black text-vora-accent tracking-widest uppercase bg-vora-accent/5 px-2.5 py-1 rounded-full border border-vora-accent/10 mt-1 w-fit shrink-0 whitespace-nowrap">
-      <User className="w-2.5 h-2.5" /> SENİN TARİFİN
+    <div className="flex items-center gap-1.5 text-[7px] font-black text-vora-accent tracking-[0.2em] uppercase mb-1">
+      <User className="w-3 h-3" /> SENİN TARİFİN
     </div>
   );
   return (
-    <div className="flex items-center gap-1.5 text-[7px] font-bold text-vora-tertiary tracking-widest uppercase bg-white/5 px-2.5 py-1 rounded-full border border-white/10 mt-1 w-fit shrink-0 whitespace-nowrap">
-      <Utensils className="w-2.5 h-2.5" /> TOPLULUK VERİSİ
+    <div className="flex items-center gap-1.5 text-[7px] font-bold text-vora-tertiary tracking-[0.2em] uppercase mb-1 opacity-50">
+      <Utensils className="w-3 h-3" /> TOPLULUK VERİSİ
     </div>
   );
 };

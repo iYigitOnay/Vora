@@ -15,8 +15,8 @@ interface BarcodeActionProps {
 }
 
 const SourceTag = ({ status }: { status: any }) => (
-  <div className="flex items-center gap-1 text-[6px] font-black text-vora-accent tracking-widest uppercase bg-vora-accent/5 px-2 py-0.5 rounded-full border border-vora-accent/10 w-fit">
-    Vision Engine
+  <div className="flex items-center gap-1.5 text-[7px] font-black text-vora-accent tracking-[0.2em] uppercase mb-1">
+    <div className="w-1.5 h-1.5 rounded-full bg-vora-accent animate-pulse" /> VORA VISION ENGINE
   </div>
 );
 
