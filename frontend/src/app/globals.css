@@ -24,43 +24,49 @@
 
 :root {
   /* Default: Ember & Moss (🌿 Theme 0) */
-  --color-background: #f0e6d3;
-  --color-surface: #ead9c0;
-  --color-surface-raised: #e0d4be;
+  --color-background: #f6edd9;
+  --color-surface: #ede0c4;
+  --color-surface-raised: #e8d5b5;
   --color-input: #ffffff;
-  --color-accent: #d4a853;
-  --color-accent-bright: #e8c070;
-  --color-accent-muted: #fdf3e0;
-  --color-text-primary: #1c2416;
-  --color-text-secondary: #2a3420;
-  --color-text-tertiary: #6b7d5a;
-  --color-text-on-accent: #2a1f0e;
-  --color-border: #c8bba8;
-  --color-border-subtle: #e0d4be;
+  --color-accent: #5c4a2a;
+  --color-accent-bright: #c8a87a;
+  --color-accent-muted: #e8d5b5;
+  --color-sidebar-bg: #3a2e18;
+  --color-text-primary: #12100a;
+  --color-text-heading: #2a1e0c;
+  --color-text-body: #3d2e18;
+  --color-text-secondary: #6b5540;
+  --color-text-tertiary: #9a8060;
+  --color-text-on-accent: #f6edd9;
+  --color-border: #d9c9a8;
+  --color-border-subtle: #ede0c4;
   --color-success: #3d7a3d;
-  --color-error: #c0392b;
-  --color-warning: #d4a853;
-  --color-overlay: #1c241699;
+  --color-error: #b83232;
+  --color-warning: #5c4a2a;
+  --color-overlay: #12100a8c;
 }
 
 [data-theme="EMBER_MOSS"] {
-  --color-background: #f0e6d3;
-  --color-surface: #ead9c0;
-  --color-surface-raised: #e0d4be;
+  --color-background: #f6edd9;
+  --color-surface: #ede0c4;
+  --color-surface-raised: #e8d5b5;
   --color-input: #ffffff;
-  --color-accent: #d4a853;
-  --color-accent-bright: #e8c070;
-  --color-accent-muted: #fdf3e0;
-  --color-text-primary: #1c2416;
-  --color-text-secondary: #2a3420;
-  --color-text-tertiary: #6b7d5a;
-  --color-text-on-accent: #2a1f0e;
-  --color-border: #c8bba8;
-  --color-border-subtle: #e0d4be;
+  --color-accent: #5c4a2a;
+  --color-accent-bright: #c8a87a;
+  --color-accent-muted: #e8d5b5;
+  --color-sidebar-bg: #3a2e18;
+  --color-text-primary: #12100a;
+  --color-text-heading: #2a1e0c;
+  --color-text-body: #3d2e18;
+  --color-text-secondary: #6b5540;
+  --color-text-tertiary: #9a8060;
+  --color-text-on-accent: #f6edd9;
+  --color-border: #d9c9a8;
+  --color-border-subtle: #ede0c4;
   --color-success: #3d7a3d;
-  --color-error: #c0392b;
-  --color-warning: #d4a853;
-  --color-overlay: #1c241699;
+  --color-error: #b83232;
+  --color-warning: #5c4a2a;
+  --color-overlay: #12100a8c;
 }
 
 [data-theme="NEURAL_DARK"] {

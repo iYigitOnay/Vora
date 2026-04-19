@@ -227,19 +227,19 @@ export default function DiaryPage() {
               ))}
             </div>
 
-            {/* ACTIONS (COMPACT) */}
-            <div className="mt-auto pt-6 border-t border-white/5 w-full grid grid-cols-3 gap-2 shrink-0">
-              <button onClick={() => { setInitialMealType("BREAKFAST"); setActiveAction("search"); }} className="flex flex-col items-center gap-1.5 p-3 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white/[0.05] transition-all group">
-                <Search className="w-3.5 h-3.5 text-vora-tertiary group-hover:text-vora-primary" />
-                <span className="text-[6px] font-black text-vora-tertiary uppercase tracking-widest">ARA</span>
+            {/* ACTIONS (LARGER) */}
+            <div className="mt-auto pt-8 border-t border-white/5 w-full grid grid-cols-3 gap-3 shrink-0">
+              <button onClick={() => { setInitialMealType("BREAKFAST"); setActiveAction("search"); }} className="flex flex-col items-center gap-2 p-5 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/[0.05] transition-all group">
+                <Search className="w-5 h-5 text-vora-tertiary group-hover:text-vora-primary" />
+                <span className="text-[9px] font-black text-vora-tertiary uppercase tracking-[0.2em]">ARA</span>
               </button>
-              <button onClick={() => { setInitialMealType("BREAKFAST"); setActiveAction("barcode"); }} className="flex flex-col items-center gap-1.5 p-3 bg-vora-accent/10 border border-vora-accent/20 rounded-xl hover:bg-vora-accent/20 transition-all group">
-                <Barcode className="w-3.5 h-3.5 text-vora-accent" />
-                <span className="text-[6px] font-black text-vora-accent uppercase tracking-widest">VISION</span>
+              <button onClick={() => { setInitialMealType("BREAKFAST"); setActiveAction("barcode"); }} className="flex flex-col items-center gap-2 p-5 bg-vora-accent/10 border border-vora-accent/20 rounded-2xl hover:bg-vora-accent/20 transition-all group">
+                <Barcode className="w-5 h-5 text-vora-accent" />
+                <span className="text-[9px] font-black text-vora-accent uppercase tracking-[0.2em]">VISION</span>
               </button>
-              <button onClick={() => setActiveAction("water")} className="flex flex-col items-center gap-1.5 p-3 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white/[0.05] transition-all group">
-                <Droplets className="w-3.5 h-3.5 text-vora-tertiary group-hover:text-vora-primary" />
-                <span className="text-[6px] font-black text-vora-tertiary uppercase tracking-widest">SU</span>
+              <button onClick={() => setActiveAction("water")} className="flex flex-col items-center gap-2 p-5 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/[0.05] transition-all group">
+                <Droplets className="w-5 h-5 text-vora-tertiary group-hover:text-vora-primary" />
+                <span className="text-[9px] font-black text-vora-tertiary uppercase tracking-[0.2em]">SU</span>
               </button>
             </div>
 
