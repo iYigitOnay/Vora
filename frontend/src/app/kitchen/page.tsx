@@ -42,6 +42,16 @@ export default function KitchenPage() {
   const [selectedRestockItem, setSelectedRestockItem] = useState<any>(null);
   const [applyingTemplate, setApplyingTemplate] = useState<string | null>(null);
 
+  // Search States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<{
+    inventory: any[];
+    templates: any[];
+    vora: any[];
+  }>({ inventory: [], templates: [], vora: [] });
+  const [addingToMeal, setAddingToMeal] = useState<{ id: string; name: string; isInventory?: boolean } | null>(null);
+
   const notify = useNotificationStore();
 
   useEffect(() => {
@@ -63,6 +73,45 @@ export default function KitchenPage() {
     fetchData();
   }, [setInventory, setTemplates, setLoading]);
 
+  // Debounced Search Logic
+  useEffect(() => {
+    const search = async () => {
+      if (!searchQuery.trim()) {
+        setSearchResults({ inventory: [], templates: [], vora: [] });
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const localInv = inventory.filter(i => 
+          i.food?.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+          i.food?.brand?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        const localTemp = templates.filter(t => 
+          t.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+
+        const voraRes = await api.get(`/food/search?q=${searchQuery}`);
+        const voraFiltered = voraRes.data.filter((vf: any) => 
+          !inventory.some(i => i.foodId === vf.id)
+        );
+
+        setSearchResults({
+          inventory: localInv,
+          templates: localTemp,
+          vora: voraFiltered
+        });
+      } catch (error) {
+        console.error("Arama hatası:", error);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const timeoutId = setTimeout(search, 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, inventory, templates]);
+
   const handleApplyTemplate = async (templateId: string, type: string) => {
     try {
       await api.post('/meal/template/apply', { templateId, type });
@@ -70,6 +119,16 @@ export default function KitchenPage() {
       setApplyingTemplate(null);
     } catch (err) {
       notify.show("Şablon uygulanırken bir hata oluştu.", "error");
+    }
+  };
+
+  const handleAddFoodToMeal = async (foodId: string, type: string) => {
+    try {
+      await api.post('/meal/log', { foodId, type, amount: 100 });
+      notify.show("Besin günlüğe başarıyla eklendi.", "success");
+      setAddingToMeal(null);
+    } catch (err) {
+      notify.show("Besin eklenirken bir hata oluştu.", "error");
     }
   };
 
@@ -235,46 +294,194 @@ export default function KitchenPage() {
 
         {/* Side Panel */}
         <div className="md:col-span-4 md:row-span-2 flex flex-col gap-8 h-full">
-          <BentoCard title="MUTFAK ÖZETİ" icon={Info} className="flex-1">
-            <div className="space-y-6">
-              <div className="p-6 bg-vora-accent/5 border border-vora-accent/20 rounded-[2rem] hover:bg-vora-accent/10 transition-colors group/status">
-                <div className="flex justify-between items-start mb-4">
-                  <p className="text-[10px] font-black text-vora-accent uppercase tracking-[0.2em]">STOK DURUMU</p>
-                  <AlertTriangle className={`w-4 h-4 text-vora-accent ${inventory.filter(i => i.minLimit && i.quantity <= i.minLimit).length > 0 ? "animate-pulse" : "opacity-20"}`} />
-                </div>
-                <p className="text-3xl font-black text-vora-primary tracking-tighter"> 
-                  {inventory.filter(i => i.minLimit && i.quantity <= i.minLimit).length} 
-                  <span className="text-[10px] font-bold text-vora-tertiary uppercase tracking-widest ml-3 opacity-60 text-indent-2">KRİTİK ÜRÜN</span> 
-                </p>
-              </div>
-
-              <div className="p-6 bg-white/[0.02] border border-vora-border/10 rounded-[2rem]">
-                <div className="flex justify-between items-center mb-6">
-                  <p className="text-[10px] font-black text-vora-tertiary uppercase tracking-[0.2em] opacity-40">ŞABLON KOTASI</p>
-                  <p className="text-[10px] font-mono font-bold text-vora-primary tracking-widest">0{templates.length} <span className="opacity-20">/</span> 02</p>
-                </div>
-                
-                {/* Biometric Gauge */}
-                <div className="relative h-2 bg-white/5 rounded-full overflow-hidden mb-4 border border-white/5">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(templates.length / 2) * 100}%` }}
-                    className={`absolute inset-y-0 left-0 rounded-full ${templates.length >= 2 ? "bg-red-500" : "bg-vora-accent"} shadow-[0_0_15px_rgba(var(--color-accent),0.5)]`}
-                  />
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <p className="text-[8px] font-bold text-vora-tertiary uppercase tracking-widest opacity-30">SLOTS REMAINING</p>
-                  <p className={`text-[8px] font-black uppercase tracking-widest ${templates.length >= 2 ? "text-red-500" : "text-vora-accent"}`}>
-                    {2 - templates.length} KULLANILABİLİR
-                  </p>
-                </div>
-
-                {templates.length >= 2 && (
-                  <button className="w-full mt-6 py-3 bg-vora-accent/10 border border-vora-accent/20 rounded-xl text-vora-accent text-[9px] font-black uppercase tracking-[0.2em] hover:bg-vora-accent hover:text-white transition-all">
-                    Limitleri Kaldır
+          <BentoCard 
+            title="MUTFAK ÖZETİ" 
+            icon={Info} 
+            className="flex-1 overflow-visible"
+          >
+            <div className="h-full relative flex flex-col">
+              
+              {/* Full Width Search Input */}
+              <div className="relative mb-6">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-vora-tertiary" />
+                <input 
+                  type="text"
+                  placeholder="MUTFAĞIMDA VEYA VORA'DA ARA..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 pl-12 pr-12 text-[10px] font-black tracking-[0.2em] uppercase focus:outline-none focus:border-vora-accent/50 focus:bg-white/[0.05] transition-all placeholder:text-vora-tertiary/20"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/5 rounded-lg text-vora-tertiary hover:text-vora-primary transition-all">
+                    <X className="w-4 h-4" />
                   </button>
                 )}
+              </div>
+
+              <div className="flex-1 min-h-0 relative">
+                <AnimatePresence mode="wait">
+                  {!searchQuery ? (
+                    <motion.div 
+                      key="stats"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="space-y-6"
+                    >
+                      <div className="p-6 bg-vora-accent/5 border border-vora-accent/20 rounded-[2rem] hover:bg-vora-accent/10 transition-colors group/status">
+                        <div className="flex justify-between items-start mb-4">
+                          <p className="text-[10px] font-black text-vora-accent uppercase tracking-[0.2em]">STOK DURUMU</p>
+                          <AlertTriangle className={`w-4 h-4 text-vora-accent ${inventory.filter(i => i.minLimit && i.quantity <= i.minLimit).length > 0 ? "animate-pulse" : "opacity-20"}`} />
+                        </div>
+                        <p className="text-3xl font-black text-vora-primary tracking-tighter"> 
+                          {inventory.filter(i => i.minLimit && i.quantity <= i.minLimit).length} 
+                          <span className="text-[10px] font-bold text-vora-tertiary uppercase tracking-widest ml-3 opacity-60 text-indent-2">KRİTİK ÜRÜN</span> 
+                        </p>
+                      </div>
+
+                      <div className="p-6 bg-white/[0.02] border border-vora-border/10 rounded-[2rem]">
+                        <div className="flex justify-between items-center mb-6">
+                          <p className="text-[10px] font-black text-vora-tertiary uppercase tracking-[0.2em] opacity-40">ŞABLON KOTASI</p>
+                          <p className="text-[10px] font-mono font-bold text-vora-primary tracking-widest">0{templates.length} <span className="opacity-20">/</span> 02</p>
+                        </div>
+                        
+                        <div className="relative h-2 bg-white/5 rounded-full overflow-hidden mb-4 border border-white/5">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(templates.length / 2) * 100}%` }}
+                            className={`absolute inset-y-0 left-0 rounded-full ${templates.length >= 2 ? "bg-red-500" : "bg-vora-accent"} shadow-[0_0_15px_rgba(var(--color-accent),0.5)]`}
+                          />
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <p className="text-[8px] font-bold text-vora-tertiary uppercase tracking-widest opacity-30">SLOTS REMAINING</p>
+                          <p className={`text-[8px] font-black uppercase tracking-widest ${templates.length >= 2 ? "text-red-500" : "text-vora-accent"}`}>
+                            {2 - templates.length} KULLANILABİLİR
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div 
+                      key="results"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="h-full flex flex-col"
+                    >
+                      <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6 pr-2">
+                        {isSearching ? (
+                          <div className="flex items-center justify-center py-20 opacity-20 animate-pulse">
+                            <Search className="w-8 h-8 text-vora-accent animate-bounce" />
+                          </div>
+                        ) : (
+                          <>
+                            {/* Section: Kilerim */}
+                            {searchResults.inventory.length > 0 && (
+                              <div className="space-y-3">
+                                <p className="text-[9px] font-black text-vora-accent uppercase tracking-[0.3em] opacity-60 ml-2">KİLERİMDEKİLER</p>
+                                {searchResults.inventory.map(item => (
+                                  <div key={item.id} className="p-4 bg-white/[0.02] border border-white/5 rounded-[1.5rem] flex justify-between items-center relative overflow-visible">
+                                    <div className="text-left">
+                                      <p className="text-[10px] font-black text-vora-primary uppercase tracking-wider">{item.food.name}</p>
+                                      <p className="text-[8px] text-vora-tertiary uppercase tracking-widest font-bold opacity-60 mt-0.5">{item.quantity}{item.unit} MEVCUT</p>
+                                    </div>
+                                    <button 
+                                      onClick={() => setAddingToMeal(addingToMeal?.id === item.foodId ? null : { id: item.foodId, name: item.food.name, isInventory: true })}
+                                      className={`p-2 rounded-xl transition-all shadow-lg ${addingToMeal?.id === item.foodId ? 'bg-vora-accent text-white' : 'bg-vora-accent/10 text-vora-accent hover:bg-vora-accent hover:text-white'}`}
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                    </button>
+
+                                    {/* Quick Log Menu for Inventory */}
+                                    <AnimatePresence>
+                                      {addingToMeal?.id === item.foodId && (
+                                        <motion.div 
+                                          initial={{ opacity: 0, scale: 0.9, x: -10 }} animate={{ opacity: 1, scale: 1, x: 0 }} exit={{ opacity: 0, scale: 0.9, x: -10 }}
+                                          className="absolute right-12 top-2 z-[100] bg-vora-surface border border-vora-border/20 rounded-2xl p-2 shadow-2xl min-w-[130px] flex flex-col gap-1"
+                                        >
+                                          {[
+                                            { id: 'BREAKFAST', l: 'Sabah', i: Clock },
+                                            { id: 'LUNCH', l: 'Öğle', i: UtensilsCrossed },
+                                            { id: 'DINNER', l: 'Akşam', i: Flame },
+                                            { id: 'SNACK', l: 'Ara', i: Zap }
+                                          ].map(m => (
+                                            <button 
+                                              key={m.id}
+                                              onClick={() => handleAddFoodToMeal(item.foodId, m.id)}
+                                              className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 rounded-xl transition-all text-left group/m"
+                                            >
+                                              <m.i className="w-3 h-3 text-vora-tertiary group-hover/m:text-vora-accent" />
+                                              <span className="text-[8px] font-black text-vora-primary uppercase tracking-widest">{m.l}</span>
+                                            </button>
+                                          ))}
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Section: Vora Kütüphanesi */}
+                            {searchResults.vora.length > 0 && (
+                              <div className="space-y-3 pb-4">
+                                <p className="text-[9px] font-black text-vora-accent uppercase tracking-[0.3em] opacity-60 ml-2">VORA KÜTÜPHANESİ</p>
+                                {searchResults.vora.map(v => (
+                                  <div key={v.id} className="p-4 bg-white/[0.02] border border-white/5 rounded-[1.5rem] flex justify-between items-center relative overflow-visible group/vora">
+                                    <div className="text-left">
+                                      <p className="text-[10px] font-black text-vora-primary uppercase tracking-wider">{v.name}</p>
+                                      <p className="text-[8px] text-vora-tertiary uppercase tracking-widest font-bold opacity-60 mt-0.5">{v.brand || 'GENEL'}</p>
+                                    </div>
+                                    <button 
+                                      onClick={() => setAddingToMeal(addingToMeal?.id === v.id ? null : { id: v.id, name: v.name })}
+                                      className={`p-2 rounded-xl transition-all shadow-lg ${addingToMeal?.id === v.id ? 'bg-vora-accent text-white' : 'bg-vora-accent/10 text-vora-accent hover:bg-vora-accent hover:text-white'}`}
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                    </button>
+
+                                    {/* Quick Log Menu for Vora */}
+                                    <AnimatePresence>
+                                      {addingToMeal?.id === v.id && (
+                                        <motion.div 
+                                          initial={{ opacity: 0, scale: 0.9, x: -10 }} animate={{ opacity: 1, scale: 1, x: 0 }} exit={{ opacity: 0, scale: 0.9, x: -10 }}
+                                          className="absolute right-12 top-2 z-[100] bg-vora-surface border border-vora-border/20 rounded-2xl p-2 shadow-2xl min-w-[130px] flex flex-col gap-1"
+                                        >
+                                          {[
+                                            { id: 'BREAKFAST', l: 'Sabah', i: Clock },
+                                            { id: 'LUNCH', l: 'Öğle', i: UtensilsCrossed },
+                                            { id: 'DINNER', l: 'Akşam', i: Flame },
+                                            { id: 'SNACK', l: 'Ara', i: Zap }
+                                          ].map(m => (
+                                            <button 
+                                              key={m.id}
+                                              onClick={() => handleAddFoodToMeal(v.id, m.id)}
+                                              className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 rounded-xl transition-all text-left group/m"
+                                            >
+                                              <m.i className="w-3 h-3 text-vora-tertiary group-hover/m:text-vora-accent" />
+                                              <span className="text-[8px] font-black text-vora-primary uppercase tracking-widest">{m.l}</span>
+                                            </button>
+                                          ))}
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {searchResults.inventory.length === 0 && searchResults.templates.length === 0 && searchResults.vora.length === 0 && (
+                              <div className="flex flex-col items-center justify-center py-20 opacity-20 text-center">
+                                <Search className="w-10 h-10 mb-4" />
+                                <p className="text-[9px] font-bold uppercase tracking-widest leading-loose">HİÇBİR SONUÇ<br/>BULUNAMADI</p>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </BentoCard>

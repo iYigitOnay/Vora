@@ -11,4 +11,10 @@ export class DashboardController {
   getSummary(@Request() req, @Query('date') date?: string) {
     return this.dashboardService.getSummary(req.user.userId, date);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('analysis')
+  getAnalysis(@Request() req) {
+    return this.dashboardService.getAnalysis(req.user.userId);
+  }
 }
